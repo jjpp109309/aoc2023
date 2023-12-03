@@ -16,9 +16,9 @@ fn main() {
     
     for line in contents.lines() {
         let (game_id, draws_string) = get_game_id(&line);
-        let max_game = get_draws(&draws_string);
+        let min_game = get_draws(&draws_string);
 
-        games.push((game_id, max_game));
+        games.push((game_id, min_game));
     }
 
     let total_valid_games: u32 = games
@@ -26,8 +26,15 @@ fn main() {
         .map(|x| add_valid_game(&config, x))
         .sum();
         
-
     println!("total valid games {}", total_valid_games);
+
+    let sum_of_powers: u32 = games
+        .iter()
+        .map(|x| game_power(x))
+        .sum();
+
+    println!("sum of powers {}", sum_of_powers);
+
 }
 
 fn get_game_id(line: &str) -> (u32, String) {
@@ -86,10 +93,10 @@ fn get_draws(draws_string: &String) -> HashMap<String, u32> {
 
 fn add_valid_game(
     config: &HashMap<String, u32>,
-    max_game: &(u32, HashMap<String, u32>)
+    min_game: &(u32, HashMap<String, u32>)
 ) -> u32 {
 
-    let (game_id, game) = max_game;
+    let (game_id, game) = min_game;
 
     for (color, count) in game {
         if config.get(color).unwrap() < count {
@@ -98,4 +105,16 @@ fn add_valid_game(
     }
 
     *game_id
+}
+
+fn game_power(min_game: &(u32, HashMap<String, u32>)) -> u32 {
+
+    let (_, game) = min_game;
+
+    let mut total: u32 = 1;
+    for (_, count) in game {
+        total *= count
+    }
+
+    total
 }
