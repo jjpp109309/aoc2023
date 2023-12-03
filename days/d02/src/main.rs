@@ -3,7 +3,7 @@ use std::fs;
 use regex::Regex;
 
 fn main() {
-    let config = HashMap::from([
+    let config: HashMap<String, u32> = HashMap::from([
         ("red".to_string(), 12),
         ("green".to_string(), 13),
         ("blue".to_string(), 14),
@@ -21,7 +21,13 @@ fn main() {
         games.push((game_id, max_game));
     }
 
-    println!("{:?}", games);
+    let total_valid_games: u32 = games
+        .iter()
+        .map(|x| add_valid_game(&config, x))
+        .sum();
+        
+
+    println!("total valid games {}", total_valid_games);
 }
 
 fn get_game_id(line: &str) -> (u32, String) {
@@ -76,4 +82,20 @@ fn get_draws(draws_string: &String) -> HashMap<String, u32> {
     }
 
     max_game
+}
+
+fn add_valid_game(
+    config: &HashMap<String, u32>,
+    max_game: &(u32, HashMap<String, u32>)
+) -> u32 {
+
+    let (game_id, game) = max_game;
+
+    for (color, count) in game {
+        if config.get(color).unwrap() < count {
+            return 0
+        }
+    }
+
+    *game_id
 }
