@@ -30,7 +30,8 @@ struct Lexer<'a> {
     input: std::str::Lines<'a>,
     prv_line: String,
     cur_line: String,
-    nxt_line: String
+    nxt_line: String,
+    cur_line_number: i32
 }
 
 impl Lexer<'_> {
@@ -41,6 +42,7 @@ impl Lexer<'_> {
             prv_line: "".to_string(),
             cur_line: "".to_string(),
             nxt_line: "".to_string(),
+            cur_line_number: -2,
         };
 
         lexer.next_line();
@@ -54,6 +56,8 @@ impl Lexer<'_> {
         self.prv_line = self.cur_line.to_owned();
         self.cur_line = self.nxt_line.to_owned();
         self.nxt_line = self.input.next().unwrap_or("").to_string();
+
+        self.cur_line_number += 1
     }
 }
 
@@ -124,6 +128,128 @@ pub fn get_part_numbers(input: &String) -> Vec<u32> {
 
     part_numbers
 }
+
+#[derive(Debug)]
+pub struct GearNumber {
+    pub number: u32,
+    pub gear_id: Vec<String>
+}
+
+pub fn get_gears(input: &String) -> Vec<GearNumber> {
+
+    let mut lexer = Lexer::new(input);
+    let re_find_digits = Regex::new(r"\d+").unwrap();
+    let re_gear = Regex::new(r"\*").unwrap();
+
+    let mut gear_numbers: Vec<GearNumber> = Vec::new();
+
+    while lexer.nxt_line != "<EoF>".to_string() {
+
+        let numbers = re_find_digits.find_iter(&lexer.cur_line);
+
+        for number in numbers {
+            let start = number.start();
+            let end = number.end();
+            
+            let upper_slice = lexer
+                .prv_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[start-1..end+1]
+                .join("")
+                .to_owned();
+
+            let lower_slice = lexer
+                .nxt_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[start-1..end+1]
+                .join("")
+                .to_owned();
+
+            let left_char = lexer
+                .cur_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[start-1]
+                .to_owned();
+
+            let right_char = lexer
+                .cur_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[end]
+                .to_owned();
+
+            let part_number: u32 = lexer
+                    .cur_line
+                    .chars()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()[start..end]
+                    .join("")
+                    .parse()
+                    .unwrap();
+
+            let mut gear_number = GearNumber {
+                number: part_number,
+                gear_id: Vec::new()
+            };
+
+            if upper_slice.chars().any(|x| x == '*') {
+                for gear in re_gear.find_iter(&upper_slice) {
+                    let gear_id = format!(
+                        "{}-{}",
+                        lexer.cur_line_number - 1,
+                        number.start() + gear.start() - 1
+                    );
+                    
+                    gear_number.gear_id.push(gear_id);
+                }
+            }
+
+            if lower_slice.chars().any(|x| x == '*') {
+                for gear in re_gear.find_iter(&lower_slice) {
+                    let gear_id = format!(
+                        "{}-{}",
+                        lexer.cur_line_number+1,
+                        number.start() + gear.start() - 1
+                    );
+                    
+                    gear_number.gear_id.push(gear_id);
+                }
+            }
+
+            if left_char == '*'.to_string() {
+                let gear_id = format!(
+                    "{}-{}",
+                    lexer.cur_line_number,
+                    number.start() - 1
+                    );
+
+                gear_number.gear_id.push(gear_id);
+            }
+
+            if right_char == '*'.to_string() {
+                let gear_id = format!(
+                    "{}-{}",
+                    lexer.cur_line_number,
+                    number.end()
+                    );
+
+                gear_number.gear_id.push(gear_id);
+            }
+
+            if gear_number.gear_id.len() > 0 {
+                gear_numbers.push(gear_number)
+            }
+        }
+
+        lexer.next_line();
+    }
+
+    gear_numbers
+}
+
 
 
 #[cfg(test)]
