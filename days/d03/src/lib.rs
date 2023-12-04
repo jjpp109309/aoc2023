@@ -11,7 +11,6 @@ pub fn parse_input(path: &str) -> String {
         .join("\n");
 
     let line_len = input.lines().next().unwrap().len();
-    println!("{}", line_len);
 
     let mut pad_string_vec: Vec<String> = Vec::new();
     for _ in 0..line_len {
@@ -63,23 +62,69 @@ pub fn get_part_numbers(input: &String) -> Vec<u32> {
     let mut lexer = Lexer::new(input);
     let re_find_digits = Regex::new(r"\d+").unwrap();
 
+    let mut part_numbers: Vec<u32> = Vec::new();
+
     while lexer.nxt_line != "<EoF>".to_string() {
 
         let numbers = re_find_digits.find_iter(&lexer.cur_line);
 
-        println!("{}", lexer.prv_line);
-        println!("{}", lexer.cur_line);
-        println!("{}", lexer.nxt_line);
-
         for number in numbers {
-            println!("begin {} end {}\n", number.start(), number.end());
+            let start = number.start();
+            let end = number.end();
+            
+            let upper_slice = lexer
+                .prv_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[start-1..end+1]
+                .join("")
+                .to_owned();
+
+            let lower_slice = lexer
+                .nxt_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[start-1..end+1]
+                .join("")
+                .to_owned();
+
+            let left_char = lexer
+                .cur_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[start-1]
+                .to_owned();
+
+            let right_char = lexer
+                .cur_line
+                .chars()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()[end]
+                .to_owned();
+
+            let margin = vec![lower_slice, upper_slice, left_char, right_char].join("");
+
+            if margin.chars().any(|x| x != '.') {
+                
+                let part_number: u32 = lexer
+                    .cur_line
+                    .chars()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()[start..end]
+                    .join("")
+                    .parse()
+                    .unwrap();
+                
+                part_numbers.push(part_number);
+            }
         }
 
         lexer.next_line();
     }
 
-    vec![32]
+    part_numbers
 }
+
 
 #[cfg(test)]
 mod test {
