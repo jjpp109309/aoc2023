@@ -82,4 +82,16 @@ mod test {
 
         assert_eq!(expected, input, "\nExpected:\n{} \n\n Got:\n{}", expected, input);
     }
+
+    #[test]
+    fn generate_lexer() {
+
+        let path = "./test_input.txt";
+        let input = parse_input(&path);
+        let lexer = Lexer::new(&input);
+
+        assert_eq!("............".to_string(), lexer.prv_line);
+        assert_eq!(".467..114...".to_string(), lexer.cur_line);
+        assert_eq!("....*.......".to_string(), lexer.nxt_line);
+    }
 }
