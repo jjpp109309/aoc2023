@@ -1,4 +1,5 @@
 use std::fs;
+use regex::Regex;
 
 pub fn parse_input(path: &str) -> String {
 
@@ -18,7 +19,12 @@ pub fn parse_input(path: &str) -> String {
     }
     let pad_string = pad_string_vec.join("");
     
-    vec![pad_string.clone(), input, pad_string.clone()].join("\n")
+    vec![
+        pad_string.clone(),
+        input,
+        pad_string.clone(), 
+        "<EoF>".to_string()
+    ].join("\n")
 }
 
 struct Lexer<'a> {
@@ -53,6 +59,24 @@ impl Lexer<'_> {
 }
 
 pub fn get_part_numbers(input: &String) -> Vec<u32> {
+
+    let mut lexer = Lexer::new(input);
+    let re_find_digits = Regex::new(r"\d+").unwrap();
+
+    while lexer.nxt_line != "<EoF>".to_string() {
+
+        let numbers = re_find_digits.find_iter(&lexer.cur_line);
+
+        println!("{}", lexer.prv_line);
+        println!("{}", lexer.cur_line);
+        println!("{}", lexer.nxt_line);
+
+        for number in numbers {
+            println!("begin {} end {}\n", number.start(), number.end());
+        }
+
+        lexer.next_line();
+    }
 
     vec![32]
 }
