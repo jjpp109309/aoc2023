@@ -56,6 +56,24 @@ pub fn score(cards: &Vec<PunchCard>) -> u32 {
         .sum()
 }
 
+pub fn multiply_cards(cards: &Vec<PunchCard>) -> u32 {
+    let score_base: u32 = 2;
+
+    for card in cards {
+        let card_power = card.intersection_len();
+        let card_score = if card_power > 0 { score_base.pow(card_power) } else { 0 };
+
+        
+    }
+    cards
+        .iter()
+        .map(|x| x.intersection_len())
+        .collect::<Vec<u32>>()
+        .iter()
+        .map(|n| if n > &0 { score_base.pow(n-1) } else { 0 })
+        .sum()
+}
+
 impl PunchCard {
     fn intersection_len(&self) -> u32 {
         self
