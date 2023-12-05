@@ -1,5 +1,6 @@
 use std::fs;
 use regex::Regex;
+use std::collections::{HashMap, hash_map::Entry};
 
 pub fn parse_input(path: &str) -> String {
 
@@ -250,7 +251,27 @@ pub fn get_gears(input: &String) -> Vec<GearNumber> {
     gear_numbers
 }
 
+pub fn get_true_gears(gear_numbers: &mut Vec<GearNumber>) -> Vec<u32> {
+    let mut gears: HashMap<String, Vec<u32>> = HashMap::new();
 
+    for gear_number in gear_numbers {
+        for gear_id in &gear_number.gear_id {
+            let token = gear_number.number;
+
+            match gears.entry(gear_id.to_owned()) {
+                Entry::Vacant(e) => { e.insert(vec![token]); },
+                Entry::Occupied(mut e) => e.get_mut().push(token)
+            };
+        }
+    }
+
+    gears
+        .values()
+        .filter(|v| v.len() == 2)
+        .map(|v| v[0] * v[1])
+        .collect::<Vec<u32>>()
+
+}
 
 #[cfg(test)]
 mod test {
