@@ -6,6 +6,7 @@ pub struct PunchCard {
     pub id: u32,
     pub winner: HashSet<u32>,
     pub owned: HashSet<u32>,
+    pub multiplicity: u32,
 }
 
 pub fn parse_input(path: &str) -> Vec<PunchCard> {
@@ -38,7 +39,7 @@ pub fn parse_input(path: &str) -> Vec<PunchCard> {
             .unwrap())
             .collect();
 
-        punch_cards.push(PunchCard { id, winner, owned});
+        punch_cards.push(PunchCard { id, winner, owned, multiplicity: 1 });
     }
 
     punch_cards
@@ -56,21 +57,28 @@ pub fn score(cards: &Vec<PunchCard>) -> u32 {
         .sum()
 }
 
-pub fn multiply_cards(cards: &Vec<PunchCard>) -> u32 {
-    let score_base: u32 = 2;
+pub fn multiply_cards(cards: &mut Vec<PunchCard>) -> u32 {
 
-    for card in cards {
-        let card_power = card.intersection_len();
-        let card_score = if card_power > 0 { score_base.pow(card_power) } else { 0 };
+    let mut card_idx = 0;
+    while card_idx < cards.len() {
+        let matches: usize = cards[card_idx]
+            .intersection_len()
+            .try_into()
+            .unwrap();
 
-        
+        if matches > 0 {
+            for _ in 0..cards[card_idx].multiplicity{
+                for i in 1..=matches {
+                    cards[card_idx+i].multiplicity += 1;
+                }
+            }
+        }
+        card_idx += 1;
     }
+    
     cards
         .iter()
-        .map(|x| x.intersection_len())
-        .collect::<Vec<u32>>()
-        .iter()
-        .map(|n| if n > &0 { score_base.pow(n-1) } else { 0 })
+        .map(|x| x.multiplicity)
         .sum()
 }
 
