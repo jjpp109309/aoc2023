@@ -73,6 +73,13 @@ impl RangeMap<u32> {
     fn contains(&self, num: u32) -> bool {
         self.source.contains(&num)
     }
+
+    fn destination(&self, num: u32) -> u32 {
+        match self.contains(num) {
+            true => todo!(),
+            false => num,
+        }
+    }
 }
 
 enum number {
