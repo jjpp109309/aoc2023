@@ -69,6 +69,12 @@ fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u32>>> {
     range_mapping
 }
 
+impl RangeMap<u32> {
+    fn contains(&self, num: u32) -> bool {
+        self.source.contains(&num)
+    }
+}
+
 enum number {
     seed,
     soil,
