@@ -15,6 +15,7 @@ fn main() {
     };
 
     let seeds: Vec<u32> = parse_seeds(&input);
+    println!("Test seeds: {:?}", seeds);
     let mappings: HashMap<String, AlmaMap<u32>> = parse_mappings(&input);
     
 }
@@ -22,7 +23,7 @@ fn main() {
 fn parse_seeds(input: &str) -> Vec<u32> {
     Regex::new(r"\d+")
         .unwrap()
-        .find_iter(input)
+        .find_iter(input.lines().next().unwrap())
         .map(|x| x.as_str().parse::<u32>().unwrap())
         .collect()
 }
