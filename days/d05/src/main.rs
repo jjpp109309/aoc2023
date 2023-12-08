@@ -48,16 +48,27 @@ fn main() {
     let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
 
     let mut destinations: Vec<u64> = Vec::new();
-    for seed in seeds {
-        let mut num = seed.to_owned();
+    let seeds_iter = seeds
+        .iter()
+        .step_by(2)
+        .zip(seeds.iter().skip(1).step_by(2));
 
-        for key in &keys {
-            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+    for (start, len) in seeds_iter {
+        let begin = *start;
+        let end = start + *len;
+
+        for seed in begin..end {
+            let mut num = seed.to_owned();
+
+            for key in &keys {
+                num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+            }
+
+            destinations.push(num);
         }
-
-        destinations.push(num);
     }
 
+    println!("part 2");
     println!("destinations {:?}", destinations);
     println!("min {:?}", destinations.iter().min());
 
