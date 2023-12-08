@@ -10,31 +10,92 @@ struct RangeMap<T> {
 }
 
 fn main() {
+    let keys = vec![
+        "seed-to-soil",
+        "soil-to-fertilizer",
+        "fertilizer-to-water",
+        "water-to-light",
+        "light-to-temperature",
+        "temperature-to-humidity",
+        "humidity-to-location",
+    ];
+
     let input = match fs::read_to_string("./test.txt") {
         Ok(string) => string,
         Err(_) => panic!("File not found :("),
     };
 
-    let seeds: Vec<u32> = parse_seeds(&input);
+    let seeds: Vec<u64> = parse_seeds(&input);
     println!("Test seeds: {:?}", seeds);
-    let mappings: HashMap<String, Vec<RangeMap<u32>>> = parse_mappings(&input);
+    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
 
-    let x = (0..100).map(|x| map_number(mappings.get("seed-to-soil").unwrap(), x));
-    println!("{:?}", x.collect::<Vec<u32>>());
+    let mut destinations: Vec<u64> = Vec::new();
+    for seed in seeds {
+        let mut num = seed.to_owned();
 
-    
+        for key in &keys {
+            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+        }
+
+        destinations.push(num);
+    }
+
+    println!("destinations {:?}", destinations);
+    println!("min {:?}", destinations.iter().min());
+
+    let seeds: Vec<u64> = parse_seeds(&input);
+    println!("Test seeds: {:?}", seeds);
+    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
+
+    let mut destinations: Vec<u64> = Vec::new();
+    for seed in seeds {
+        let mut num = seed.to_owned();
+
+        for key in &keys {
+            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+        }
+
+        destinations.push(num);
+    }
+
+    println!("destinations {:?}", destinations);
+    println!("min {:?}", destinations.iter().min());
+
+    let input = match fs::read_to_string("./input.txt") {
+        Ok(string) => string,
+        Err(_) => panic!("File not found :("),
+    };
+
+    let seeds: Vec<u64> = parse_seeds(&input);
+    println!("Test seeds: {:?}", seeds);
+    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
+
+    let mut destinations: Vec<u64> = Vec::new();
+    for seed in seeds {
+        let mut num = seed.to_owned();
+
+        for key in &keys {
+            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+        }
+
+        destinations.push(num);
+    }
+
+    println!("destinations {:?}", destinations);
+    println!("min {:?}", destinations.iter().min());
+
 }
 
-fn parse_seeds(input: &str) -> Vec<u32> {
+fn parse_seeds(input: &str) -> Vec<u64> {
     Regex::new(r"\d+")
         .unwrap()
         .find_iter(input.lines().next().unwrap())
-        .map(|x| x.as_str().parse::<u32>().unwrap())
+        .map(|x| x.as_str().parse::<u64>().unwrap())
         .collect()
 }
 
-fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u32>>> {
-    let mut range_mapping: HashMap<String, Vec<RangeMap<u32>>> = HashMap::new();
+fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u64>>> {
+    let mut range_mapping: HashMap<String, Vec<RangeMap<u64>>> = HashMap::new();
 
     let re_maps = Regex::new(r"\w+-\w+-\w+ map:\n(\d+ \d+ \d+\n)+").unwrap();
     let re_name = Regex::new(r"\w+-\w+-\w+").unwrap();
@@ -45,14 +106,14 @@ fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u32>>> {
     for mapping in mappings_iter {
         let name = String::from(re_name.find(mapping).unwrap().as_str());
 
-        let mut ranges: Vec<RangeMap<u32>> = Vec::new();
+        let mut ranges: Vec<RangeMap<u64>> = Vec::new();
 
         for range in re_ranges.captures_iter(mapping) {
             let (_, [dst, src, len]) = range.extract();
 
-            let dst: u32 = dst.parse().unwrap();
-            let src: u32 = src.parse().unwrap();
-            let len: u32 = len.parse().unwrap();
+            let dst: u64 = dst.parse().unwrap();
+            let src: u64 = src.parse().unwrap();
+            let len: u64 = len.parse().unwrap();
 
             let source = Range { start: src, end: src + len };
             let destination = Range { start: dst, end: dst + len };
@@ -66,7 +127,7 @@ fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u32>>> {
     range_mapping
 }
 
-fn map_number(mappings: &Vec<RangeMap<u32>>, num: u32) -> u32 {
+fn map_number(mappings: &Vec<RangeMap<u64>>, num: u64) -> u64 {
     let mut value = num;
     for mapping in mappings {
         if mapping.source.contains(&value) {
