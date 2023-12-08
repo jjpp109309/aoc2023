@@ -76,7 +76,7 @@ impl RangeMap<u32> {
 
     fn destination(&self, num: u32) -> u32 {
         match self.contains(num) {
-            true => todo!(),
+            true => self.destination.start + num - self.source.start,
             false => num,
         }
     }
