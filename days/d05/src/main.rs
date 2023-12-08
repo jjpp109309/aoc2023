@@ -19,12 +19,9 @@ fn main() {
     println!("Test seeds: {:?}", seeds);
     let mappings: HashMap<String, Vec<RangeMap<u32>>> = parse_mappings(&input);
 
-    for i in mappings.get("seed-to-soil").unwrap() {
-        println!("{:?}", i);
-        for j in i.source.clone() {
-            println!("{}", j);
-        }
-    }
+    let x = (0..100).map(|x| map_number(mappings.get("seed-to-soil").unwrap(), x));
+    println!("{:?}", x.collect::<Vec<u32>>());
+
     
 }
 
@@ -69,39 +66,14 @@ fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u32>>> {
     range_mapping
 }
 
-impl RangeMap<u32> {
-    fn contains(&self, num: u32) -> bool {
-        self.source.contains(&num)
-    }
-
-    fn destination(&self, num: u32) -> u32 {
-        match self.contains(num) {
-            true => self.destination.start + num - self.source.start,
-            false => num,
+fn map_number(mappings: &Vec<RangeMap<u32>>, num: u32) -> u32 {
+    let mut value = num;
+    for mapping in mappings {
+        if mapping.source.contains(&value) {
+            value = mapping.destination.start + num - mapping.source.start;
+            break
         }
     }
-}
-
-enum number {
-    seed,
-    soil,
-    fertilizer,
-    water,
-    light,
-    temperature,
-    humidity,
-}
-
-impl number {
-    fn map_arm(&self) -> number {
-        match self {
-            number::seed => number::soil,
-            number::soil => number::fertilizer,
-            number::fertilizer => number::water,
-            number::water => number::light,
-            number::light => number::temperature,
-            number::temperature => number::humidity,
-            number::humidity => todo!(),
-        }
-    }
+    
+    value
 }
