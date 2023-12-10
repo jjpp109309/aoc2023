@@ -8,7 +8,7 @@ use regex::Regex;
 pub struct RangeMap {
     start: i64,
     end: i64,
-    delta: i64,
+    delta: Option<i64>,
 }
 
 impl PartialOrd for RangeMap {
@@ -43,6 +43,33 @@ impl Ord for RangeMap {
 
 impl Eq for RangeMap {}
 
+impl RangeMap {
+    fn intersect(&self, other: Self) -> Intersection {
+        let start = cmp::max(self.start, other.start);
+        let end = cmp::min(self.end, other.end);
+
+        match start < end {
+            true => {
+                match end <= self.end {
+                    true => Intersection::Proper(other),
+                    false => Intersection::Improper(
+                        RangeMap { start, end: self.end, delta: None },
+                        RangeMap { start: self.end, end, delta: None }
+                    ),
+                }
+            },
+            false => Intersection::Null
+        }
+
+    }
+}
+
+enum Intersection {
+    Proper(RangeMap),
+    Improper(RangeMap, RangeMap),
+    Null,
+}
+
 pub fn parse_seeds(input: &str) -> Vec<i64> {
     Regex::new(r"\d+")
         .unwrap()
@@ -74,7 +101,7 @@ pub fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap>> {
 
             let start = src;
             let end = src + len;
-            let delta = dst - src;
+            let delta = Some(dst - src);
 
             ranges.push( RangeMap { start, end, delta });
         }
@@ -93,7 +120,7 @@ fn fill_range(ranges: &Vec<RangeMap>) -> Vec<RangeMap> {
    
     for range in ranges.iter() {
         if range.start > index {
-            let filler = RangeMap { start: index, end: range.start, delta: 0};
+            let filler = RangeMap { start: index, end: range.start, delta: None };
             filled_ranges.push(filler);
         }
 
@@ -101,7 +128,7 @@ fn fill_range(ranges: &Vec<RangeMap>) -> Vec<RangeMap> {
         index = range.end;
     }
 
-    let filler = RangeMap { start: index, end: i64::MAX, delta: 0};
+    let filler = RangeMap { start: index, end: i64::MAX, delta: None};
     filled_ranges.push(filler);
 
     filled_ranges
