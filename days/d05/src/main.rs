@@ -20,9 +20,9 @@ fn main() {
         Err(_) => panic!("File not found :("),
     };
 
-    let seeds: Vec<u64> = parse_seeds(&input);
+    let seeds: Vec<i64> = parse_seeds(&input);
     println!("Test seeds: {:?}", seeds);
-    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
+    let mappings: HashMap<String, Vec<RangeMap<i64>>> = parse_mappings(&input);
     println!("{:?}", mappings.get("seed-to-soil").unwrap());
 }
 
