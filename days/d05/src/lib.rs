@@ -84,10 +84,6 @@ pub fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap>> {
         range_mapping.insert(name, ranges);
     }
 
-    for (key, val) in range_mapping.iter() {
-        println!("key {:?} value {:?}", key, val);
-    }
-    
     range_mapping
 }
 
