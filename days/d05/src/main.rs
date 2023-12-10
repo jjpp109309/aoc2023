@@ -95,6 +95,23 @@ fn main() {
     println!("destinations {:?}", destinations);
     println!("min {:?}", destinations.iter().min());
 
+    let seeds: Vec<u64> = parse_seeds(&input);
+    let seeds_iter = seeds
+        .iter()
+        .step_by(2)
+        .zip(seeds.iter().skip(1).step_by(2));
+    
+    for (start, len) in seeds_iter {
+        let end = &(start + len);
+        let seed_range = Range{ start, end };
+
+        for key in &keys {
+            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+        }
+    }
+    
+    println!("part 2");
+    println!("min {:?}", destinations.iter().min());
 }
 
 fn parse_seeds(input: &str) -> Vec<u64> {
@@ -148,4 +165,19 @@ fn map_number(mappings: &Vec<RangeMap<u64>>, num: u64) -> u64 {
     }
     
     value
+}
+
+fn map_range(mappings: &Vec<RangeMap<u64>>, seeds: &Range<u64>) -> Range<u32> {
+    for mapping in mappings {
+        if let Some(r) = intersect(seeds, mapping) {
+        }
+        
+    }
+    
+    todo!()
+}
+
+fn intersect(range_1: &Range<u64>, range_2: &RangeMap<u64>)
+-> Option<Range<u32>> {
+    todo!()
 }
