@@ -1,13 +1,8 @@
-use std::fs;
-use std::collections::HashMap;
-use std::ops::Range;
-use regex::Regex;
+#![allow(unused_variables, dead_code)]
 
-#[derive(Debug)]
-struct RangeMap<T> {
-    source: Range<T>,
-    destination: Range<T>,
-}
+use std::fs;
+use d05::*;
+use std::collections::HashMap;
 
 fn main() {
     let keys = vec![
@@ -19,122 +14,114 @@ fn main() {
         "temperature-to-humidity",
         "humidity-to-location",
     ];
+    // ------------------------------------------------------------------------
+    // part 1: test
+    // ------------------------------------------------------------------------
 
     let input = match fs::read_to_string("./test.txt") {
         Ok(string) => string,
         Err(_) => panic!("File not found :("),
     };
 
-    let seeds: Vec<u64> = parse_seeds(&input);
+    let seeds: Vec<i64> = parse_seeds(&input);
     println!("Test seeds: {:?}", seeds);
-    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
+    let mappings: HashMap<String, Vec<RangeMap>> = parse_mappings(&input);
 
-    let mut destinations: Vec<u64> = Vec::new();
-    for seed in seeds {
-        let mut num = seed.to_owned();
+    let ranges = mappings.get("seed-to-soil").unwrap();
+    let seed = vec![RangeMap { start: 45, end:55, delta: None }];
+
+    println!("test input\n{:?}\nmapping\n{:?}", seed, ranges);
+    let outputs = map_ranges(&seed, ranges);
+    println!("test outputs\n{:?}", outputs);
+
+        for seed in seeds {
+        let mut seed_range = vec![RangeMap {start: seed, end:seed+1, delta: None}];
 
         for key in &keys {
-            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+            let mapping = mappings.get(&key.to_string()).unwrap();
+            seed_range = map_ranges(&seed_range, mapping);
         }
 
-        destinations.push(num);
+        println!("seed {:?}", seed);
+        println!("output\n{:?}", seed_range);
     }
-
-    println!("destinations {:?}", destinations);
-    println!("min {:?}", destinations.iter().min());
-
-    let seeds: Vec<u64> = parse_seeds(&input);
-    println!("Test seeds: {:?}", seeds);
-    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
-
-    let mut destinations: Vec<u64> = Vec::new();
-    for seed in seeds {
-        let mut num = seed.to_owned();
-
-        for key in &keys {
-            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
-        }
-
-        destinations.push(num);
-    }
-
-    println!("destinations {:?}", destinations);
-    println!("min {:?}", destinations.iter().min());
+    // ------------------------------------------------------------------------
+    // part 1
+    // ------------------------------------------------------------------------
 
     let input = match fs::read_to_string("./input.txt") {
         Ok(string) => string,
         Err(_) => panic!("File not found :("),
     };
 
-    let seeds: Vec<u64> = parse_seeds(&input);
-    println!("Test seeds: {:?}", seeds);
-    let mappings: HashMap<String, Vec<RangeMap<u64>>> = parse_mappings(&input);
+    let seeds: Vec<i64> = parse_seeds(&input);
+    println!("seeds: {:?}", seeds);
+    let mappings: HashMap<String, Vec<RangeMap>> = parse_mappings(&input);
 
-    let mut destinations: Vec<u64> = Vec::new();
+    let mut locations: Vec<RangeMap> = Vec::new();
+
     for seed in seeds {
-        let mut num = seed.to_owned();
+        let mut seed_range = vec![RangeMap {start: seed, end:seed+1, delta: None}];
 
         for key in &keys {
-            num = map_number(mappings.get(key.to_owned()).unwrap(), num);
+            let mapping = mappings.get(&key.to_string()).unwrap();
+            seed_range = map_ranges(&seed_range, mapping);
         }
+        locations.append(&mut seed_range);
+    }
+    println!("Part 1:\n{:?}", locations.iter().map(|x| x.start).min());
+    // ------------------------------------------------------------------------
+    // part 2: test
+    // ------------------------------------------------------------------------
 
-        destinations.push(num);
+    let input = match fs::read_to_string("./test.txt") {
+        Ok(string) => string,
+        Err(_) => panic!("File not found :("),
+    };
+
+    let seeds: Vec<i64> = parse_seeds(&input);
+    println!("Test seeds: {:?}", seeds);
+    let mappings: HashMap<String, Vec<RangeMap>> = parse_mappings(&input);
+
+    let mut seed_range = vec![RangeMap {start: 79, end:93, delta: None}];
+
+    for key in &keys {
+        let mapping = mappings.get(&key.to_string()).unwrap();
+        seed_range = map_ranges(&seed_range, mapping);
     }
 
-    println!("destinations {:?}", destinations);
-    println!("min {:?}", destinations.iter().min());
+    println!("seed {:?}", seed_range);
+    println!("output\n{:?}", seed_range);
+    println!("Part 2 Test:\n{:?}", seed_range.iter().map(|x| x.start).min());
+    // ------------------------------------------------------------------------
+    // part 2
+    // ------------------------------------------------------------------------
 
-}
+    let input = match fs::read_to_string("./input.txt") {
+        Ok(string) => string,
+        Err(_) => panic!("File not found :("),
+    };
 
-fn parse_seeds(input: &str) -> Vec<u64> {
-    Regex::new(r"\d+")
-        .unwrap()
-        .find_iter(input.lines().next().unwrap())
-        .map(|x| x.as_str().parse::<u64>().unwrap())
-        .collect()
-}
+    let seeds: Vec<i64> = parse_seeds(&input);
 
-fn parse_mappings(input: &str) -> HashMap<String, Vec<RangeMap<u64>>> {
-    let mut range_mapping: HashMap<String, Vec<RangeMap<u64>>> = HashMap::new();
+    let mappings: HashMap<String, Vec<RangeMap>> = parse_mappings(&input);
 
-    let re_maps = Regex::new(r"\w+-\w+-\w+ map:\n(\d+ \d+ \d+\n)+").unwrap();
-    let re_name = Regex::new(r"\w+-\w+-\w+").unwrap();
-    let re_ranges = Regex::new(r"\n(\d+) (\d+) (\d+)").unwrap();
+    let mut locations: Vec<RangeMap> = Vec::new();
 
-    let mappings_iter = re_maps.find_iter(input).map(|m| m.as_str());
-
-    for mapping in mappings_iter {
-        let name = String::from(re_name.find(mapping).unwrap().as_str());
-
-        let mut ranges: Vec<RangeMap<u64>> = Vec::new();
-
-        for range in re_ranges.captures_iter(mapping) {
-            let (_, [dst, src, len]) = range.extract();
-
-            let dst: u64 = dst.parse().unwrap();
-            let src: u64 = src.parse().unwrap();
-            let len: u64 = len.parse().unwrap();
-
-            let source = Range { start: src, end: src + len };
-            let destination = Range { start: dst, end: dst + len };
-
-            ranges.push( RangeMap { source, destination });
-        }
-
-        range_mapping.insert(name, ranges);
-    }
-
-    range_mapping
-}
-
-fn map_number(mappings: &Vec<RangeMap<u64>>, num: u64) -> u64 {
-    let mut value = num;
-    for mapping in mappings {
-        if mapping.source.contains(&value) {
-            value = mapping.destination.start + num - mapping.source.start;
-            break
-        }
-    }
+    for chunk in seeds.chunks(2) {
+        let start = chunk[0];
+        let end = start + chunk[1];
+        let mut seed_range = vec![RangeMap { start, end, delta: None }];
+        println!("seed range: {:?}", seed_range);
     
-    value
+        for key in &keys {
+            let mapping = mappings.get(&key.to_string()).unwrap();
+            seed_range = map_ranges(&seed_range, mapping);
+        }
+        locations.append(&mut seed_range);
+    }
+    // println!("Part 1:\n{:?}", locations);
+    println!("Part 1:\n{:?}", locations.iter().map(|x| x.start).min());
 }
+
+
