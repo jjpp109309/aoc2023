@@ -6,9 +6,9 @@ use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct RangeMap {
-    start: i64,
-    end: i64,
-    delta: Option<i64>,
+    pub start: i64,
+    pub end: i64,
+    pub delta: Option<i64>,
 }
 
 impl PartialOrd for RangeMap {
@@ -44,17 +44,17 @@ impl Ord for RangeMap {
 impl Eq for RangeMap {}
 
 impl RangeMap {
-    fn intersect(&self, other: Self) -> Intersection {
+    fn intersect(&self, other: &Self) -> Intersection {
         let start = cmp::max(self.start, other.start);
         let end = cmp::min(self.end, other.end);
 
         match start < end {
             true => {
-                match end <= self.end {
-                    true => Intersection::Proper(other),
+                match other.end <= self.end {
+                    true => Intersection::Proper(other.to_owned()),
                     false => Intersection::Improper(
                         RangeMap { start, end: self.end, delta: None },
-                        RangeMap { start: self.end, end, delta: None }
+                        RangeMap { start: self.end, end: other.end, delta: None }
                     ),
                 }
             },
@@ -120,7 +120,7 @@ fn fill_range(ranges: &Vec<RangeMap>) -> Vec<RangeMap> {
    
     for range in ranges.iter() {
         if range.start > index {
-            let filler = RangeMap { start: index, end: range.start, delta: None };
+            let filler = RangeMap { start: index, end: range.start, delta: Some(0) };
             filled_ranges.push(filler);
         }
 
@@ -128,8 +128,51 @@ fn fill_range(ranges: &Vec<RangeMap>) -> Vec<RangeMap> {
         index = range.end;
     }
 
-    let filler = RangeMap { start: index, end: i64::MAX, delta: None};
+    let filler = RangeMap { start: index, end: i64::MAX, delta: Some(0)};
     filled_ranges.push(filler);
 
     filled_ranges
+}
+
+pub fn map_ranges(inputs: &Vec<RangeMap>, mappings: &Vec<RangeMap>) -> Vec<RangeMap>{   
+    let mut mapped_ranges: Vec<RangeMap> = Vec::new();
+
+    let input_iter = inputs.iter();
+
+    for input in inputs {
+        let mut input_ = input.to_owned();
+
+        for map in mappings {
+            let disj: Option<RangeMap> = match map.intersect(&input_) {
+                Intersection::Proper(x) => {
+                    let intersection = RangeMap {
+                        start: x.start + map.delta.unwrap(),
+                        end: x.end + map.delta.unwrap(),
+                        delta: None,
+                    };
+
+                    mapped_ranges.push(intersection);
+                    break;
+                },
+                Intersection::Improper(x, disj) => {
+                    let intersection = RangeMap {
+                        start: x.start + map.delta.unwrap(),
+                        end: x.end + map.delta.unwrap(),
+                        delta: None,
+                    };
+
+                    mapped_ranges.push(intersection);
+
+                    Some(disj.clone())
+                },
+                Intersection::Null => None,
+            };
+
+            if let Some(i) = disj {
+                input_ = i;
+            }
+        }
+    }
+
+    mapped_ranges
 }
