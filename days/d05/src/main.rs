@@ -93,7 +93,35 @@ fn main() {
     println!("seed {:?}", seed_range);
     println!("output\n{:?}", seed_range);
     println!("Part 2 Test:\n{:?}", seed_range.iter().map(|x| x.start).min());
+    // ------------------------------------------------------------------------
+    // part 2
+    // ------------------------------------------------------------------------
 
+    let input = match fs::read_to_string("./input.txt") {
+        Ok(string) => string,
+        Err(_) => panic!("File not found :("),
+    };
+
+    let seeds: Vec<i64> = parse_seeds(&input);
+
+    let mappings: HashMap<String, Vec<RangeMap>> = parse_mappings(&input);
+
+    let mut locations: Vec<RangeMap> = Vec::new();
+
+    for chunk in seeds.chunks(2) {
+        let start = chunk[0];
+        let end = start + chunk[1];
+        let mut seed_range = vec![RangeMap { start, end, delta: None }];
+        println!("seed range: {:?}", seed_range);
+    
+        for key in &keys {
+            let mapping = mappings.get(&key.to_string()).unwrap();
+            seed_range = map_ranges(&seed_range, mapping);
+        }
+        locations.append(&mut seed_range);
+    }
+    // println!("Part 1:\n{:?}", locations);
+    println!("Part 1:\n{:?}", locations.iter().map(|x| x.start).min());
 }
 
 
