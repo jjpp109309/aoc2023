@@ -11,22 +11,16 @@ pub fn parse_input(string: &str) -> Vec<Race> {
     
     let mut lines = string.lines();
 
-    let times: Vec<i32> = re_digis
+    let times = re_digis
         .find_iter(lines.next().unwrap())
-        .map(|m| m.as_str().parse().unwrap())
-        .collect();
+        .map(|m| m.as_str().parse::<i32>().unwrap());
 
-    let distances: Vec<i32> = re_digis
+    let distances = re_digis
         .find_iter(lines.next().unwrap())
-        .map(|m| m.as_str().parse().unwrap())
-        .collect();
+        .map(|m| m.as_str().parse::<i32>().unwrap());
     
-    println!("{:?}", times);
-    println!("{:?}", distances);
-
     times
-        .iter()
-        .zip(distances.iter())
-        .map(|(t, d)| Race { time: *t, distance: *d } )
+        .zip(distances)
+        .map(|(t, d)| Race { time: t, distance: d } )
         .collect()
 }
