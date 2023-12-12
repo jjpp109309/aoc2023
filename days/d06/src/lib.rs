@@ -2,8 +2,8 @@ use regex::Regex;
 
 #[derive(Debug)]
 pub struct Race {
-    time: i32,
-    distance: i32,
+    pub time: i32,
+    pub distance: i32,
 }
 
 pub fn parse_input(string: &str) -> Vec<Race> {
@@ -23,4 +23,24 @@ pub fn parse_input(string: &str) -> Vec<Race> {
         .zip(distances)
         .map(|(t, d)| Race { time: t, distance: d } )
         .collect()
+}
+
+pub fn total_wins(race: &Race) -> i32 {
+    let mut charge_time = 0;
+
+    while total_distance(&charge_time, &race.time) <= race.distance {
+        charge_time += 1;
+    }
+
+    let mut wins = 0;
+    while total_distance(&charge_time, &race.time) > race.distance {
+        wins += 1;
+        charge_time += 1;
+    }
+        
+    wins
+}
+
+fn total_distance(charge_time: &i32, total_time: &i32) -> i32 {
+    (total_time - charge_time) * charge_time
 }
