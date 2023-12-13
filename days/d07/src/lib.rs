@@ -1,4 +1,7 @@
+use std::fs;
+use regex::Regex;
 use std::cmp::Ordering;
+use counter::Counter;
 
 enum Card {
     Two,
@@ -9,7 +12,6 @@ enum Card {
     Seven,
     Eight,
     Nine,
-    Ten,
     Jack,
     Queen,
     King,
@@ -17,6 +19,23 @@ enum Card {
 }
 
 impl Card {
+    fn new(input: char) -> Card {
+        match input {
+            '2' => Card::Two,
+            '3' => Card::Three,
+            '4' => Card::Four,
+            '5' => Card::Five,
+            '6' => Card::Six,
+            '7' => Card::Seven,
+            '8' => Card::Eight,
+            '9' => Card::Nine,
+            'J' => Card::Jack,
+            'Q' => Card::Queen,
+            'K' => Card::King,
+            'A' => Card::A,
+        }
+    }
+
     fn value(&self) -> u32 {
         match self {
             Card::Two => 2,
@@ -27,7 +46,6 @@ impl Card {
             Card::Seven => 7,
             Card::Eight => 8,
             Card::Nine => 9,
-            Card::Ten => 10,
             Card::Jack => 11,
             Card::Queen => 12,
             Card::King => 13,
@@ -76,6 +94,14 @@ impl PartialEq for HandStrength {
 }
 
 impl HandStrength {
+    fn parse(hand: String) -> HandStrength {
+        let by_common = hand.chars().collect::<Counter<_>>().most_common_ordered();
+
+        if by_common.iter().map(|(c, val)| val == 5.into()).any() {
+            HandStrength::FiveOfAKind
+        }
+    }
+
     fn value(&self) -> u32 {
         match self {
             HandStrength::FiveOfAKind => 1,
@@ -110,4 +136,32 @@ struct Hand {
     cards: Vec<Card>,
     bid: u32,
     strength: HandStrength,
+}
+
+impl Hand {
+    fn new(cards: String, bid: u32) -> Hand {
+        let cards: Vec<Card> = cards.chars().map(|c| Card::new(c)).collect();
+        
+    }
+}
+
+pub fn parse_input(input: &str) -> Vec<Hand> {
+    let re = Regex::new(r"(\w+) (\d+)").unwrap();
+    let hands: Vec<Hand> = Vec::new();
+
+    if let Ok(s) = fs::read_to_string(input) {
+        for line in s.lines() {
+            re.captures_iter(line).map(|caps| {
+                let (_, [cards, bid]) = caps.extract();
+                let cards: String = cards.to_string();
+                let bid: u32 = bid.parse().unwrap();
+
+                let hand = Hand::new(cards, bid);
+            });
+        }
+    } else {
+        panic!("File not found :(")
+    }
+
+    todo!()
 }
