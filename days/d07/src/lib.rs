@@ -3,6 +3,7 @@ use regex::Regex;
 use std::cmp::Ordering;
 use counter::Counter;
 
+#[derive(Debug)]
 enum Card {
     Two,
     Three,
@@ -12,6 +13,7 @@ enum Card {
     Seven,
     Eight,
     Nine,
+    Ten,
     Jack,
     Queen,
     King,
@@ -29,6 +31,7 @@ impl Card {
             '7' => Card::Seven,
             '8' => Card::Eight,
             '9' => Card::Nine,
+            'T' => Card::Ten,
             'J' => Card::Jack,
             'Q' => Card::Queen,
             'K' => Card::King,
@@ -47,6 +50,7 @@ impl Card {
             Card::Seven => 7,
             Card::Eight => 8,
             Card::Nine => 9,
+            Card::Ten => 10,
             Card::Jack => 11,
             Card::Queen => 12,
             Card::King => 13,
@@ -79,6 +83,7 @@ impl PartialOrd for Card {
     }
 }
 
+#[derive(Debug)]
 enum HandStrength {
     FiveOfAKind,
     FourOfAKind,
@@ -204,6 +209,7 @@ impl PartialOrd for HandStrength {
     }
 }
 
+#[derive(Debug)]
 pub struct Hand {
     cards: Vec<Card>,
     bid: u32,
@@ -225,18 +231,17 @@ pub fn parse_input(input: &str) -> Vec<Hand> {
 
     if let Ok(s) = fs::read_to_string(input) {
         for line in s.lines() {
-            let _ = re.captures_iter(line).map(|caps| {
-                let (_, [cards, bid]) = caps.extract();
+            for (_, [cards, bid]) in re.captures_iter(line).map(|c| c.extract()) {
                 let cards: String = cards.to_string();
                 let bid: u32 = bid.parse().unwrap();
 
                 let hand = Hand::new(cards, bid);
                 hands.push(hand);
-            });
+            }
         }
     } else {
         panic!("File not found :(")
     }
 
-    todo!()
+    hands
 }

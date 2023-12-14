@@ -1,3 +1,6 @@
+use d07::*;
+
 fn main() {
-    println!("Hello, world!");
+    let hands = parse_input("./test.txt");
+    println!("hands {:?}", hands);
 }
