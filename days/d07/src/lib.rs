@@ -33,6 +33,7 @@ impl Card {
             'Q' => Card::Queen,
             'K' => Card::King,
             'A' => Card::A,
+            _ => panic!("not a card")
         }
     }
 
@@ -84,6 +85,7 @@ enum HandStrength {
     FullHouse,
     ThreeOfAKind,
     TwoPair,
+    OnePair,
     HighCard,
 }
 
@@ -94,12 +96,81 @@ impl PartialEq for HandStrength {
 }
 
 impl HandStrength {
+
     fn parse(hand: String) -> HandStrength {
         let by_common = hand.chars().collect::<Counter<_>>().most_common_ordered();
 
-        if by_common.iter().map(|(c, val)| val == 5.into()).any() {
+        if Self::is_five_of_a_kind(&by_common) {
             HandStrength::FiveOfAKind
+        } else if Self::is_four_of_a_kind(&by_common) {
+            HandStrength::FourOfAKind
+        } else if Self::is_full_house(&by_common) {
+            HandStrength::FullHouse
+        } else if Self::is_three_of_a_kind(&by_common) {
+            HandStrength::ThreeOfAKind
+        } else if Self::is_two_pair(&by_common) {
+            HandStrength::TwoPair
+        } else if Self::is_one_pair(&by_common) {
+            HandStrength::OnePair
+        } else {
+            HandStrength::HighCard
         }
+    }
+
+    fn is_five_of_a_kind(hand: &Vec<(char, usize)>) -> bool {
+        hand
+            .iter()
+            .any(|(_, val)| *val == 5) 
+    }
+
+    fn is_four_of_a_kind(hand: &Vec<(char, usize)>) -> bool {
+        hand
+            .iter()
+            .any(|(_, val)| *val == 4) 
+    }
+
+    fn is_full_house(hand: &Vec<(char, usize)>) -> bool {
+        let pair_exists = hand
+            .iter()
+            .any(|(_, val)| *val == 2);
+
+        let third_exists = hand
+            .iter()
+            .any(|(_, val)| *val == 3);
+
+        pair_exists && third_exists
+    }
+
+    fn is_three_of_a_kind(hand: &Vec<(char, usize)>) -> bool {
+        let no_pair_exists = !hand
+            .iter()
+            .any(|(_, val)| *val == 2);
+
+        let third_exists = hand
+            .iter()
+            .any(|(_, val)| *val == 3);
+
+        no_pair_exists && third_exists
+    }
+
+    fn is_two_pair(hand: &Vec<(char, usize)>) -> bool {
+        let total_pairs = hand
+            .iter()
+            .filter(|(_, val)| *val == 2)
+            .collect::<Vec<&(char, usize)>>()
+            .len();
+
+        total_pairs == 2
+    }
+
+    fn is_one_pair(hand: &Vec<(char, usize)>) -> bool {
+        let total_pairs = hand
+            .iter()
+            .filter(|(_, val)| *val == 2)
+            .collect::<Vec<&(char, usize)>>()
+            .len();
+
+        total_pairs == 1
     }
 
     fn value(&self) -> u32 {
@@ -109,7 +180,8 @@ impl HandStrength {
             HandStrength::FullHouse => 3,
             HandStrength::ThreeOfAKind => 4,
             HandStrength::TwoPair => 5,
-            HandStrength::HighCard => 6,
+            HandStrength::OnePair => 6,
+            HandStrength::HighCard => 7,
         }
     }
 }
@@ -132,31 +204,34 @@ impl PartialOrd for HandStrength {
     }
 }
 
-struct Hand {
+pub struct Hand {
     cards: Vec<Card>,
     bid: u32,
     strength: HandStrength,
 }
 
 impl Hand {
-    fn new(cards: String, bid: u32) -> Hand {
-        let cards: Vec<Card> = cards.chars().map(|c| Card::new(c)).collect();
+    fn new(literal: String, bid: u32) -> Hand {
+        let cards: Vec<Card> = literal.chars().map(|c| Card::new(c)).collect();
+        let strength = HandStrength::parse(literal);
         
+        Hand { cards, bid, strength }
     }
 }
 
 pub fn parse_input(input: &str) -> Vec<Hand> {
     let re = Regex::new(r"(\w+) (\d+)").unwrap();
-    let hands: Vec<Hand> = Vec::new();
+    let mut hands: Vec<Hand> = Vec::new();
 
     if let Ok(s) = fs::read_to_string(input) {
         for line in s.lines() {
-            re.captures_iter(line).map(|caps| {
+            let _ = re.captures_iter(line).map(|caps| {
                 let (_, [cards, bid]) = caps.extract();
                 let cards: String = cards.to_string();
                 let bid: u32 = bid.parse().unwrap();
 
                 let hand = Hand::new(cards, bid);
+                hands.push(hand);
             });
         }
     } else {
