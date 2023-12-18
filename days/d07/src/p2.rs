@@ -98,25 +98,85 @@ pub enum HandStrength {
 impl HandStrength {
 
     fn parse(hand: String) -> HandStrength {
-        let by_common = hand
+        let counts: Counter<char> = hand
             .chars()
-            .collect::<Counter<_>>()
-            .most_common_ordered();
+            .collect();
 
+        let by_common = counts
+            .most_common()
+            .into_iter()
+            .filter(|(key, _)| *key!='J')
+            .collect::<Vec<(char, usize)>>();
+
+        let strength: HandStrength;
         if Self::is_five_of_a_kind(&by_common) {
-            HandStrength::FiveOfAKind
+            strength = HandStrength::FiveOfAKind;
         } else if Self::is_four_of_a_kind(&by_common) {
-            HandStrength::FourOfAKind
+            strength = HandStrength::FourOfAKind;
         } else if Self::is_full_house(&by_common) {
-            HandStrength::FullHouse
+            strength = HandStrength::FullHouse;
         } else if Self::is_three_of_a_kind(&by_common) {
-            HandStrength::ThreeOfAKind
+            strength = HandStrength::ThreeOfAKind;
         } else if Self::is_two_pair(&by_common) {
-            HandStrength::TwoPair
+            strength = HandStrength::TwoPair;
         } else if Self::is_one_pair(&by_common) {
-            HandStrength::OnePair
+            strength = HandStrength::OnePair;
         } else {
-            HandStrength::HighCard
+            strength = HandStrength::HighCard;
+        }
+        
+        match strength {
+            HandStrength::FiveOfAKind => strength,
+            HandStrength::FourOfAKind => {
+                if let Some(_) = counts.get(&'J') {
+                    HandStrength::FiveOfAKind
+                } else {
+                    strength
+                }
+            },
+            HandStrength::FullHouse => strength,
+            HandStrength::ThreeOfAKind => {
+                if let Some(n_jokers) = counts.get(&'J') {
+                    match n_jokers {
+                        1 => HandStrength::FourOfAKind,
+                        2 => HandStrength::FiveOfAKind,
+                        _ => panic!(),
+                    }
+                } else {
+                    strength
+                }
+            },
+            HandStrength::TwoPair => {
+                if let Some(_) = counts.get(&'J') {
+                    HandStrength::FullHouse
+                } else {
+                    strength
+                }
+            },
+            HandStrength::OnePair => {
+                if let Some(n_jokers) = counts.get(&'J') {
+                    match n_jokers {
+                        1 => HandStrength::ThreeOfAKind,
+                        2 => HandStrength::FourOfAKind,
+                        3 => HandStrength::FiveOfAKind,
+                        _ => panic!(),
+                    }
+                } else {
+                    strength
+                }
+            },
+            HandStrength::HighCard => {
+                if let Some(n_jokers) = counts.get(&'J') {
+                    match n_jokers {
+                        1 => HandStrength::OnePair,
+                        2 => HandStrength::ThreeOfAKind,
+                        3 => HandStrength::FourOfAKind,
+                        _ => HandStrength::FiveOfAKind,
+                    }
+                } else {
+                    strength
+                }
+            },
         }
     }
 
@@ -157,13 +217,13 @@ impl HandStrength {
     }
 
     fn is_two_pair(hand: &Vec<(char, usize)>) -> bool {
-        let total_pairs = hand
-            .iter()
-            .filter(|(_, val)| *val == 2)
-            .collect::<Vec<&(char, usize)>>()
-            .len();
+                let total_pairs = hand
+                    .iter()
+                    .filter(|(_, val)| *val == 2)
+                    .collect::<Vec<&(char, usize)>>()
+                    .len();
 
-        total_pairs == 2
+                total_pairs == 2
     }
 
     fn is_one_pair(hand: &Vec<(char, usize)>) -> bool {
