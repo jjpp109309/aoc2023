@@ -1,4 +1,5 @@
 use d07::*;
+mod p2;
 
 fn main() {
     let mut hands = parse_input("./test.txt");
