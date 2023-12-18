@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use counter::Counter;
 
 #[derive(Debug)]
-enum Card {
+pub enum Card {
     Two,
     Three,
     Four,
@@ -83,27 +83,25 @@ impl PartialOrd for Card {
     }
 }
 
-#[derive(Debug)]
-enum HandStrength {
-    FiveOfAKind,
-    FourOfAKind,
-    FullHouse,
-    ThreeOfAKind,
-    TwoPair,
-    OnePair,
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub enum HandStrength {
     HighCard,
+    OnePair,
+    TwoPair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    FiveOfAKind,
 }
 
-impl PartialEq for HandStrength {
-    fn eq(&self, other: &Self) -> bool {
-        self.value() == other.value()
-    }
-}
 
 impl HandStrength {
 
     fn parse(hand: String) -> HandStrength {
-        let by_common = hand.chars().collect::<Counter<_>>().most_common_ordered();
+        let by_common = hand
+            .chars()
+            .collect::<Counter<_>>()
+            .most_common_ordered();
 
         if Self::is_five_of_a_kind(&by_common) {
             HandStrength::FiveOfAKind
@@ -191,37 +189,34 @@ impl HandStrength {
     }
 }
 
-impl PartialOrd for HandStrength {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let x1 = self.value();
-        let x2 = other.value();
-
-        match x1 == x2 {
-            true => Some(Ordering::Equal),
-            false => {
-                if x1 > x2 {
-                    Some(Ordering::Greater)
-                } else {
-                    Some(Ordering::Less)
-                }
-            }
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Hand {
-    cards: Vec<Card>,
-    bid: u32,
-    strength: HandStrength,
+    pub cards: Vec<Card>,
+    pub bid: u32,
+    pub strength: HandStrength,
+    pub key: String,
 }
 
 impl Hand {
     fn new(literal: String, bid: u32) -> Hand {
-        let cards: Vec<Card> = literal.chars().map(|c| Card::new(c)).collect();
+        let cards: Vec<Card> = literal
+            .chars()
+            .map(|c| Card::new(c))
+            .collect();
+
         let strength = HandStrength::parse(literal);
         
-        Hand { cards, bid, strength }
+        let mut values: Vec<i32> = cards.iter().map(|c| 14 - (c.value() as i32)).collect();
+        let mut key_nums = vec![(strength.value() as i32)];
+        key_nums.append(&mut values);
+        
+        let key = key_nums
+            .iter()
+            .map(|k| format!("{:0>2}", k))
+            .collect::<Vec<String>>()
+            .join("");
+
+        Hand { cards, bid, strength, key }
     }
 }
 
@@ -231,7 +226,8 @@ pub fn parse_input(input: &str) -> Vec<Hand> {
 
     if let Ok(s) = fs::read_to_string(input) {
         for line in s.lines() {
-            for (_, [cards, bid]) in re.captures_iter(line).map(|c| c.extract()) {
+            let captures_iter = re.captures_iter(line).map(|c| c.extract());
+            for (_, [cards, bid]) in captures_iter {
                 let cards: String = cards.to_string();
                 let bid: u32 = bid.parse().unwrap();
 
