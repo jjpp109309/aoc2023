@@ -3,8 +3,8 @@ use std::collections::HashMap;
 pub fn navigate(
     instructions: String,
     map: HashMap<String, HashMap<char, String>>
-) -> u32 {
-    let mut counts = 0;
+) -> u64 {
+    let mut counts: u64 = 0;
     let mut locations: Vec<String> = map
         .keys()
         .into_iter()
@@ -14,14 +14,14 @@ pub fn navigate(
     
     for instruction in instructions.chars().cycle() {
         counts += 1;
-        for i in 0..locations.len() {
-            locations[i] = map
-                .get(&locations[i]).unwrap()
+
+        locations = locations.iter().map(|l| { map
+                .get(l).unwrap()
                 .get(&instruction)
                 .unwrap()
-                .to_string();
-        }
-    
+                .to_string()
+        }).collect();
+
         if locations.iter().all(|loc| loc.ends_with("Z")) {
             break
         }

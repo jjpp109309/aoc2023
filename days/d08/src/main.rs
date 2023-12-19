@@ -8,7 +8,7 @@ fn main() {
     let (instructions, map) = parse_input(path);
 
     let total = p1::navigate(instructions, map);
-    println!("{:?}", total);
+    println!("Test: {:?}", total);
 
     // part 1
     let path = "./input.txt";
@@ -20,10 +20,15 @@ fn main() {
     // test 2
     let path = "./test2.txt";
     let (instructions, map) = parse_input(path);
-    println!("instructions: {:?}", instructions);
-    println!("map: {:?}", map);
 
     let total = p2::navigate(instructions, map);
-    println!("{:?}", total);
+    println!("Test 2: {:?}", total);
+
+    // part 2
+    let path = "./input.txt";
+    let (instructions, map) = parse_input(path);
+
+    let total = p2::navigate(instructions, map);
+    println!("Part 2: {:?}", total);
 
 }
