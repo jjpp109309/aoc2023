@@ -20,14 +20,14 @@ fn main() {
     // test 2
     let path = "./test2.txt";
     let (instructions, map) = parse_input(path);
-
+    
     let total = p2::navigate(instructions, map);
     println!("Test 2: {:?}", total);
 
     // part 2
     let path = "./input.txt";
-    let (instructions, map) = parse_input(path);
-
+    let (instructions, map) = parse_input(path);   
+    
     let total = p2::navigate(instructions, map);
     println!("Part 2: {:?}", total);
 
