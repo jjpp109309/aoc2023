@@ -1,3 +1,22 @@
+use std::fs;
+use regex::Regex;
+
+pub fn parse(path: &str) -> Vec<Vec<i32>> {
+    if let Ok(file) = fs::read_to_string(path) {
+        file.lines().map(find_digits).collect()
+    } else {
+        panic!("File not found")
+    }
+}
+
+fn find_digits(string: &str) -> Vec<i32> {
+    Regex::new(r"\d+")
+        .unwrap()
+        .find_iter(string)
+        .filter_map(|digit| digit.as_str().parse().ok())
+        .collect()
+}
+
 pub fn predict(sequence: Vec<i32>) -> i32 {
     if sequence.iter().all(|&x| x==0) {
         return 0
@@ -56,5 +75,17 @@ mod tests {
         let result = predict(vec);
 
         assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn parse_input() {
+        let result = parse("./test.txt");
+        let expected = vec![
+            vec![0, 3, 6, 9, 12, 15],
+            vec![1, 3, 6, 10, 15, 21],
+            vec![10, 13, 16, 21, 30, 45],
+        ];
+
+        assert_eq!(result, expected);
     }
 }
