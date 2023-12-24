@@ -88,4 +88,38 @@ mod tests {
 
         assert_eq!(result, expected);
     }
+
+    #[test]
+    fn test_part2_1() {
+        let expected = -3;
+
+        let mut vec = vec![0, 3, 6, 9, 12, 15];
+        vec.reverse();
+
+        let result = predict(&vec);
+
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_part2_2() {
+        let expected = 0;
+
+        let mut vec = vec![1, 3, 6, 10, 15, 21];
+        vec.reverse();
+        let result = predict(&vec);
+
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_part2_3() {
+        let expected = 5;
+
+        let mut vec = vec![10, 13, 16, 21, 30, 45];
+        vec.reverse();
+        let result = predict(&vec);
+
+        assert_eq!(expected, result);
+    }
 }
