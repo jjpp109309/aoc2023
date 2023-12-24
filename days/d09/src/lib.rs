@@ -1,7 +1,7 @@
 use std::fs;
 use regex::Regex;
 
-pub fn parse(path: &str) -> Vec<Vec<i32>> {
+pub fn parse(path: &str) -> Vec<Vec<i64>> {
     if let Ok(file) = fs::read_to_string(path) {
         file.lines().map(find_digits).collect()
     } else {
@@ -9,23 +9,23 @@ pub fn parse(path: &str) -> Vec<Vec<i32>> {
     }
 }
 
-fn find_digits(string: &str) -> Vec<i32> {
-    Regex::new(r"\d+")
+fn find_digits(string: &str) -> Vec<i64> {
+    Regex::new(r"-?\d+")
         .unwrap()
         .find_iter(string)
         .filter_map(|digit| digit.as_str().parse().ok())
         .collect()
 }
 
-pub fn predict(sequence: Vec<i32>) -> i32 {
+pub fn predict(sequence: &Vec<i64>) -> i64 {
     if sequence.iter().all(|&x| x==0) {
         return 0
     } else {
-        return sequence.last().unwrap() + predict(difference(&sequence))
+        return sequence.last().unwrap() + predict(&difference(&sequence))
     }
 }
 
-fn difference(sequence: &Vec<i32>) -> Vec<i32> {
+fn difference(sequence: &Vec<i64>) -> Vec<i64> {
     sequence[0..sequence.len()]
         .iter()
         .zip(sequence[1..].iter())
@@ -52,7 +52,7 @@ mod tests {
         let expected = 18;
 
         let vec = vec![0, 3, 6, 9, 12, 15];
-        let result = predict(vec);
+        let result = predict(&vec);
 
         assert_eq!(expected, result);
     }
@@ -62,7 +62,7 @@ mod tests {
         let expected = 28;
 
         let vec = vec![1, 3, 6, 10, 15, 21];
-        let result = predict(vec);
+        let result = predict(&vec);
 
         assert_eq!(expected, result);
     }
@@ -72,7 +72,7 @@ mod tests {
         let expected = 68;
 
         let vec = vec![10, 13, 16, 21, 30, 45];
-        let result = predict(vec);
+        let result = predict(&vec);
 
         assert_eq!(expected, result);
     }
