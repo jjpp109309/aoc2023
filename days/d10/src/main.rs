@@ -1,3 +1,5 @@
+use d10::*;
+
 fn main() {
-    println!("Hello, world!");
+    let maze = parse("./input.txt");
 }
