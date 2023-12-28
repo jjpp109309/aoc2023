@@ -2,14 +2,13 @@ use std::cell::RefCell;
 use std::fs;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Node {
+    id: String,
     row: usize,
     col: usize,
-    visited: bool,
     neighbors: Vec<String>,
-    start: bool,
-    in_cycle: Option<bool>,
+    discovered: bool,
 }
 
 #[derive(Debug)]
@@ -58,19 +57,23 @@ impl Node {
                     Location::East => if col < max_cols - 1 {neighbors.push(format!("{}_{}", row, col + 1))},
                 }
             }
+            let id = format!("{}_{}", row, col);
+            let discovered = false;
 
-            let start = c == 'S';
-            let in_cycle = None;
-            Some(Node { row, col, visited: false, neighbors, start , in_cycle })
+            Some(Node { id, row, col, neighbors, discovered })
         }
     }
 
-    fn set_visited(&mut self) {
-        self.visited = true;
+    fn set_discovered(&mut self) {
+        self.discovered = true
     }
 
-    fn set_in_cycle(&mut self, value: bool) {
-        self.in_cycle = Some(value);
+    fn get_neighbors(&self) -> Vec<String> {
+        self.neighbors.clone()
+    }
+
+    fn is_discovered(&self) -> bool {
+        self.discovered.clone()
     }
 }
 
@@ -98,40 +101,35 @@ pub fn parse(path: &str) -> HashMap<String, Node> {
     graph
 }
 
-fn find_cycle(graph: &RefCell<HashMap<String, Node>>, id: &String, source_id: Option<&String>) -> bool {
-    let mut binding = graph.borrow_mut();
-    let node = binding.get_mut(id).unwrap();
-    println!("node: {:?}", node);
+pub fn dfs(graph: &mut HashMap<String, Node>, id: &String, cycle: &mut Vec<String>) -> &mut Vec<&String> {
+    graph.get_mut(id).unwrap().set_discovered();
 
-    if !node.visited {
-        node.set_visited();
-        
-        let mut new_id: Option<&String> = None;
-        for n_id in &node.neighbors {
-            if Some(n_id) == source_id { continue };
+    let unexplored: Vec<String> = graph
+        .get(id)
+        .unwrap()
+        .get_neighbors()
+        .into_iter()
+        .filter(|x| !cycle.contains(&x))
+        .collect();
 
-            let mut binding = graph.borrow_mut();
-            let neighbor = binding.get_mut(id).unwrap();
-
-            println!("\tneighbor: {:?}", neighbor);
-
-            neighbor.set_in_cycle(find_cycle(graph, n_id, Some(id)));
-
-            if neighbor.in_cycle == Some(true) {
-                new_id = Some(n_id);
-                break
-            };
-        }
-
-        if let Some(_) = new_id {
-            return true
-        } else {
-            return false
-        }
+    if unexplored.is_empty() {
+        todo!()
     } else {
-        return node.start
+        let mut new_discovered: Vec<String>;
+        for n_id in &unexplored {
+            new_discovered = vec![n_id.to_string()];
+            let is_discovered = graph.get(n_id).unwrap().is_discovered();
+            if !is_discovered {
+                new_discovered = dfs(graph, n_id, &mut new_discovered);
+            }
+        }
+
+        cycle.append(&mut new_discovered);
+        return cycle
     }
+    
 }
+
 
 #[cfg(test)]
 mod test {
@@ -144,20 +142,19 @@ mod test {
 
         let mut expected: HashMap<String, Node> = HashMap::new();
 
-        expected.insert("1_1".to_string(), Node { row: 1, col: 1, visited: false, neighbors: vec!["2_1".to_string(), "1_2".to_string()], start: true, in_cycle: None });
-        expected.insert("3_3".to_string(), Node { row: 3, col: 3, visited: false, neighbors: vec!["2_3".to_string(), "3_2".to_string()], start: false, in_cycle: None });
-        expected.insert("3_1".to_string(), Node { row: 3, col: 1, visited: false, neighbors: vec!["2_1".to_string(), "3_2".to_string()], start: false, in_cycle: None });
-        expected.insert("2_1".to_string(), Node { row: 2, col: 1, visited: false, neighbors: vec!["1_1".to_string(), "3_1".to_string()], start: false, in_cycle: None });
-        expected.insert("1_3".to_string(), Node { row: 1, col: 3, visited: false, neighbors: vec!["2_3".to_string(), "1_2".to_string()], start: false, in_cycle: None });
-        expected.insert("1_2".to_string(), Node { row: 1, col: 2, visited: false, neighbors: vec!["1_1".to_string(), "1_3".to_string()], start: false, in_cycle: None });
-        expected.insert("3_2".to_string(), Node { row: 3, col: 2, visited: false, neighbors: vec!["3_1".to_string(), "3_3".to_string()], start: false, in_cycle: None });
-        expected.insert("2_3".to_string(), Node { row: 2, col: 3, visited: false, neighbors: vec!["1_3".to_string(), "3_3".to_string()], start: false, in_cycle: None });
+        expected.insert("1_1".to_string(), Node { id: "1_1".to_string(), row: 1, col: 1, neighbors: vec!["2_1".to_string(), "1_2".to_string()], discovered: false});
+        expected.insert("3_3".to_string(), Node { id: "3_3".to_string(), row: 3, col: 3, neighbors: vec!["2_3".to_string(), "3_2".to_string()], discovered: false});
+        expected.insert("3_1".to_string(), Node { id: "3_1".to_string(), row: 3, col: 1, neighbors: vec!["2_1".to_string(), "3_2".to_string()], discovered: false});
+        expected.insert("2_1".to_string(), Node { id: "2_1".to_string(), row: 2, col: 1, neighbors: vec!["1_1".to_string(), "3_1".to_string()], discovered: false});
+        expected.insert("1_3".to_string(), Node { id: "1_3".to_string(), row: 1, col: 3, neighbors: vec!["2_3".to_string(), "1_2".to_string()], discovered: false});
+        expected.insert("1_2".to_string(), Node { id: "1_2".to_string(), row: 1, col: 2, neighbors: vec!["1_1".to_string(), "1_3".to_string()], discovered: false});
+        expected.insert("3_2".to_string(), Node { id: "3_2".to_string(), row: 3, col: 2, neighbors: vec!["3_1".to_string(), "3_3".to_string()], discovered: false});
+        expected.insert("2_3".to_string(), Node { id: "2_3".to_string(), row: 2, col: 3, neighbors: vec!["1_3".to_string(), "3_3".to_string()], discovered: false});
 
         for (key, val) in expected.iter() {
             let res_val = result.get(key).unwrap();
             assert_eq!(val.row, res_val.row);
             assert_eq!(val.col, res_val.col);
-            assert_eq!(val.visited, res_val.visited);
             assert_eq!(val.neighbors, res_val.neighbors);
         }
     }
@@ -165,10 +162,12 @@ mod test {
     #[test]
     fn test_cycle_case_1() {
         let path = "./case1.txt";
-        let result = parse(path);
-        println!("Maze\n{:?}", result);
+        let mut result = parse(path);
+        println!("before\n{:?}", result);
 
-        let x = find_cycle(&RefCell::new(result), &"1_1".to_string(), None);
+        dfs(&mut result, &"1_1".to_string());
 
+        println!("after\n{:?}", result);
+        panic!();
     }
 }
