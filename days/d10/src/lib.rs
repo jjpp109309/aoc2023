@@ -162,7 +162,7 @@ where
     None
 }
 
-fn find_loop(
+pub fn find_loop(
     graph: &HashMap<String, Vec<String>>,
     current: &String,
     parent: &String,
