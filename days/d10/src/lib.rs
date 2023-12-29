@@ -17,23 +17,29 @@ struct Node {
 
 pub fn parse(path: &str) -> HashMap<String, Vec<String>> {
     if let Ok(file) = fs::read_to_string(path) {
-        let max_rows = file.lines().count();
+        let max_row = file.lines().count() - 1;
+        let max_col = file
+            .lines()
+            .next()
+            .unwrap()
+            .chars()
+            .collect::<Vec<char>>()
+            .len() - 1;
 
-        let mut nodes: HashMap<String, Node> = file
+        let nodes: HashMap<String, Node> = file
             .lines()
             .enumerate()
             .map(|(row, line)| from_line(line, row))
             .flatten()
             .collect();
 
-        make_graph(nodes)
+        make_graph(nodes, max_row, max_col)
     } else {
         panic!("File not found");
     }
 }
 
 fn from_line(line: &str, row: usize) -> Vec<(String, Node)> {
-    let max_cols = line.chars().count();
     line
         .chars()
         .enumerate()
@@ -42,41 +48,21 @@ fn from_line(line: &str, row: usize) -> Vec<(String, Node)> {
         .collect()
 }
 
-fn make_graph(nodes: HashMap<String, Node>) -> HashMap<String, Vec<String>> {
+fn make_graph(
+    nodes: HashMap<String, Node>,
+    max_rows: usize,
+    max_cols: usize
+) -> HashMap<String, Vec<String>> {
     
-    let locations: HashMap<String, Vec<Location>> = nodes
+    let neighbor_locations: HashMap<String, Vec<Location>> = nodes
         .iter()
         .map(|(id, n)| (id.to_string(), get_locations(n.c)))
         .collect();
 
     nodes
         .iter()
-        .map(|(id, node)| get_neighbors(id, node, locations))
-
-    todo!();
-    // if locations.is_empty() {
-    //     None
-    // } else {
-    //     for location in locations {
-    //         match location {
-    //             Location::North => if row > 0 {
-    //                 neighbors.push(format!("{}_{}", row - 1, col))
-    //             },
-    //             Location::South => if row < max_rows - 1 {
-    //                 neighbors.push(format!("{}_{}", row + 1, col))
-    //             },
-    //             Location::West => if col > 0 {
-    //                 neighbors.push(format!("{}_{}", row, col - 1))
-    //             },
-    //             Location::East => if col < max_cols - 1 {
-    //                 neighbors.push(format!("{}_{}", row, col + 1))
-    //             },
-    //         }
-    //     }
-    //     let id = format!("{}_{}", row, col);
-    //
-    //     Some((id, neighbors))
-    // }
+        .map(|(id, node)| get_neighbors(id, node, &neighbor_locations, max_rows, max_cols))
+        .collect()
 }
 
 fn get_locations(c: char) -> Vec<Location> {
@@ -94,11 +80,86 @@ fn get_locations(c: char) -> Vec<Location> {
 }
 
 fn get_neighbors(
-    id: String,
-    node: Node,
-    locations: HashMap<String, Vec<Location>>
+    id: &String,
+    node: &Node,
+    locations: &HashMap<String, Vec<Location>>,
+    max_row: usize,
+    max_col: usize,
 ) -> (String, Vec<String>) {
-    todo!()
+    let mut neighbors = Vec::new();
+
+    for location in locations.get(id).unwrap() {
+        let mut n_id = None;
+        let (n_id, is_neighbor): (Option<String>, fn(&Location)->bool) =
+            match location {
+                Location::North => {
+                    let is_neighbor = |l: &Location| match l {
+                        Location::South => true,
+                        _ => false
+                    };
+                    if node.row > 0 {
+                        n_id = Some(format!("{}_{}", node.row-1, node.col));
+                    }
+
+                    (n_id, is_neighbor)
+                },
+                Location::South => {
+                    let is_neighbor = |l: &Location| match l {
+                        Location::North => true,
+                        _ => false
+                    };
+                    if node.row < max_row {
+                        n_id = Some(format!("{}_{}", node.row + 1, node.col));
+                    }
+
+                    (n_id, is_neighbor)
+                },
+                Location::East => {
+                    let is_neighbor = |l: &Location| match l {
+                        Location::West => true,
+                        _ => false
+                    };
+                    if node.col < max_col {
+                        n_id = Some(format!("{}_{}", node.row, node.col + 1));
+                    }
+
+                    (n_id, is_neighbor)
+                },
+                Location::West => {
+                    let is_neighbor = |l: &Location| match l {
+                        Location::East => true,
+                        _ => false
+                    };
+                    if node.col > 0 {
+                        n_id = Some(format!("{}_{}", node.row, node.col - 1));
+                    }
+
+                    (n_id, is_neighbor)
+                },
+        };
+
+        if let Some(s) = neighbor(n_id, locations, is_neighbor) {
+            neighbors.push(s);
+        }
+    }
+
+    (id.to_string(), neighbors)
+}
+
+fn neighbor<F>(
+    n_id: Option<String>,
+    locations: &HashMap<String, Vec<Location>>,
+    is_neighbor: F
+) -> Option<String>
+where
+    F: Fn(&Location) -> bool,
+{
+    if let Some(n_id) = &n_id {
+        if let Some(locs) = locations.get(n_id) {
+            return locs.iter().any(is_neighbor).then(|| n_id).cloned()
+        }
+    }
+    None
 }
 
 fn find_loop(
@@ -172,6 +233,8 @@ mod test {
         expected.insert("1_2".to_string(), vec!["1_1".to_string(), "1_3".to_string()]);
         expected.insert("3_2".to_string(), vec!["3_1".to_string(), "3_3".to_string()]);
         expected.insert("2_3".to_string(), vec!["1_3".to_string(), "3_3".to_string()]);
+        expected.insert("0_1".to_string(), vec![]);
+        expected.insert("4_3".to_string(), vec![]);
 
         assert_eq!(expected, result);
     }
