@@ -7,3 +7,4 @@ fn main() {
     let loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
     println!("Part 1:\n{:?}", loop_path.len()/2);
 }
+
