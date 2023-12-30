@@ -360,15 +360,6 @@ mod test {
     }
 
     #[test]
-    fn enclosed_case1() {
-        let graph = parse("./enclosed_1.txt");
-        let start = "1_1".to_string();
-        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-        loop_path.sort();
-        println!("loop path\n\n{:?}", loop_path);
-    }
-
-    #[test]
     fn path_dicts() {
         let input = vec!["1_3".to_string(), "1_2".to_string()];
         let (rows, cols) = format_path(input);
@@ -382,5 +373,16 @@ mod test {
 
         assert_eq!(rows, e_rows);
         assert_eq!(cols, e_cols);
+    }
+
+    #[test]
+    fn enclosed_case1() {
+        let graph = parse("./enclosed_1.txt");
+        let start = "1_1".to_string();
+        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        loop_path.sort();
+        println!("loop path\n\n{:?}", loop_path);
+        
+        panic!()
     }
 }
