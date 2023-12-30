@@ -194,6 +194,34 @@ pub fn find_loop(
     Vec::new()
 }
 
+fn format_path(path: Vec<String>) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u32>>) {
+    let mut rows: HashMap<u32, Vec<u32>> = HashMap::new();
+    let mut cols: HashMap<u32, Vec<u32>> = HashMap::new();
+
+    for index in path.iter() {
+        let values: Vec<u32> = index
+            .split("_")
+            .filter_map(|s| s.parse::<u32>().ok())
+            .collect();
+
+        let (row, col) = (values[0], values[1]);
+
+        rows.entry(row).or_insert(vec![]).push(col);
+        cols.entry(col).or_insert(vec![]).push(row);
+
+    }
+
+    for value in rows.values_mut() {
+        value.sort();
+    }
+
+    for value in cols.values_mut() {
+        value.sort();
+    }
+
+    (rows, cols)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -329,5 +357,30 @@ mod test {
         ];
 
         assert_eq!(expected, loop_path);
+    }
+
+    #[test]
+    fn enclosed_case1() {
+        let graph = parse("./enclosed_1.txt");
+        let start = "1_1".to_string();
+        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        loop_path.sort();
+        println!("loop path\n\n{:?}", loop_path);
+    }
+
+    #[test]
+    fn path_dicts() {
+        let input = vec!["1_3".to_string(), "1_2".to_string()];
+        let (rows, cols) = format_path(input);
+
+        let mut e_rows: HashMap<u32, Vec<u32>> = HashMap::new();
+        e_rows.insert(1, vec![2, 3]);
+
+        let mut e_cols: HashMap<u32, Vec<u32>> = HashMap::new();
+        e_cols.insert(2, vec![1]);
+        e_cols.insert(3, vec![1]);
+
+        assert_eq!(rows, e_rows);
+        assert_eq!(cols, e_cols);
     }
 }
