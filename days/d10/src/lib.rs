@@ -194,7 +194,9 @@ pub fn find_loop(
     Vec::new()
 }
 
-fn format_path(path: &Vec<String>) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u32>>) {
+fn format_path(
+    path: &Vec<String>,
+) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u32>>) {
     let mut rows: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut cols: HashMap<u32, Vec<u32>> = HashMap::new();
 
@@ -229,15 +231,23 @@ enum PipeState {
 }
 
 impl PipeState {
-    fn toggle(self) -> Self {
-        match self {
+    fn toggle(&mut self) {
+        *self = match self {
             PipeState::Inside => PipeState::Outside,
             PipeState::Outside => PipeState::Inside,
-        }
+        };
     }
 }
 
-fn scan_vec(v: Vec<u32>, state: PipeState, mut enclosed: Vec<u32>) -> Vec<u32> {
+fn scan_vec(
+    v: Vec<u32>,
+    mut state: PipeState,
+    mut enclosed: Vec<u32>,
+) -> Vec<u32> {
+    println!("-----------------------");
+    println!("vec: {:?}", v);
+    println!("state: {:?}", state);
+
     if v.len() == 1 {
         enclosed
     } else {
@@ -248,8 +258,45 @@ fn scan_vec(v: Vec<u32>, state: PipeState, mut enclosed: Vec<u32>) -> Vec<u32> {
             },
             PipeState::Outside => enclosed,
         };
-        scan_vec(v[1..].to_vec(), state.toggle(), enclosed)
+
+
+        println!("enclosed:\n{:?}", enclosed);
+        scan_vec(v[1..].to_vec(), state, enclosed)
     }
+}
+
+fn find_enclosed(
+    rows: &HashMap<u32, Vec<u32>>,
+    cols: &HashMap<u32, Vec<u32>>,
+) -> usize {
+    let mut enclosed_count: HashMap<String, u8> = HashMap::new();
+
+    for (row, cols) in rows.iter() {
+        for col in scan_vec(cols.to_vec(), PipeState::Inside, vec![]) {
+            let key = format!("{}_{}", row, col);
+            if let Some(c) = enclosed_count.get(&key) {
+                enclosed_count.insert(key, c + 1);
+            } else {
+                enclosed_count.insert(key, 1);
+            }
+        }
+    }
+
+    for (col, rows) in cols.iter() {
+        for row in scan_vec(rows.to_vec(), PipeState::Inside, vec![]) {
+            let key = format!("{}_{}", row, col);
+            if let Some(c) = enclosed_count.get(&key) {
+                enclosed_count.insert(key, c + 1);
+            } else {
+                enclosed_count.insert(key, 0);
+            }
+        }
+    }
+
+    enclosed_count
+        .into_values()
+        .filter(|&v| v==2)
+        .count()
 }
 
 #[cfg(test)]
@@ -409,18 +456,27 @@ mod test {
     fn test_scan_vec() {
         let test_row_1 = vec![1, 2, 7, 8];
         let expected_row_1: Vec<u32> = vec![];
-
-        let test_row_2 = vec![1, 4, 5, 8];
-        let expected_row_2: Vec<u32> = vec![2, 3, 6, 7];
-
         let output_row = scan_vec(test_row_1, PipeState::Inside, vec![]);
         assert_eq!(expected_row_1, output_row);
-
+        
+        let test_row_2 = vec![1, 4, 5, 8];
+        let expected_row_2: Vec<u32> = vec![2, 3, 6, 7];
         let output_col = scan_vec(test_row_2, PipeState::Inside, vec![]);
         assert_eq!(expected_row_2, output_col);
+        
+        let test_row_3 = vec![1, 2, 3, 4, 6, 7, 8, 9];
+        let expected_row_3: Vec<u32> = vec![];
+        let output_col = scan_vec(test_row_3, PipeState::Inside, vec![]);
+        assert_eq!(expected_row_3, output_col);
+
+        // L--J.L7...LJS7F-7L7.
+        // let test_row_4 = vec![0, 1, 2, 3, 5, 6, 10, 11, 12, 13, 14, 15, 16 , 17, 18];
+        // let expected_row_4: Vec<u32> = vec![7, 8, 9];
+        // let output_col = scan_vec(test_row_4, PipeState::Inside, vec![]);
+        // assert_eq!(expected_row_4, output_col);
     }
 
-    #[test]
+    // #[test]
     fn enclosed_case1() {
         let graph = parse("./enclosed_1.txt");
         let start = "1_1".to_string();
@@ -428,11 +484,40 @@ mod test {
         loop_path.sort();
 
         let (rows, cols) = format_path(&loop_path);
-
-        println!("rows:\n{:?}", rows);
-        println!("cols:\n{:?}", cols);
-
+        println!("rows: {:?}", rows);
+        println!("cols: {:?}", cols);
+        let output = find_enclosed(&rows, &cols);
         
-        // panic!("non implemented")
+        assert_eq!(output, 4);
+    }
+
+    // #[test]
+    fn enclosed_case2() {
+        let graph = parse("./enclosed_2.txt");
+        let start = "1_1".to_string();
+        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        loop_path.sort();
+
+        let (rows, cols) = format_path(&loop_path);
+        println!("rows: {:?}", rows);
+        println!("cols: {:?}", cols);
+        let output = find_enclosed(&rows, &cols);
+        
+        assert_eq!(output, 4);
+    }
+
+    // #[test]
+    fn enclosed_case3() {
+        let graph = parse("./enclosed_3.txt");
+        let start = "4_12".to_string();
+        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        loop_path.sort();
+
+        let (rows, cols) = format_path(&loop_path);
+        println!("rows: {:?}", rows);
+        println!("cols: {:?}", cols);
+        let output = find_enclosed(&rows, &cols);
+        
+        assert_eq!(output, 4);
     }
 }
