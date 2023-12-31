@@ -194,7 +194,7 @@ pub fn find_loop(
     Vec::new()
 }
 
-fn format_path(path: Vec<String>) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u32>>) {
+fn format_path(path: &Vec<String>) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u32>>) {
     let mut rows: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut cols: HashMap<u32, Vec<u32>> = HashMap::new();
 
@@ -220,6 +220,36 @@ fn format_path(path: Vec<String>) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u
     }
 
     (rows, cols)
+}
+
+#[derive(Debug)]
+enum PipeState {
+    Inside,
+    Outside,
+}
+
+impl PipeState {
+    fn toggle(self) -> Self {
+        match self {
+            PipeState::Inside => PipeState::Outside,
+            PipeState::Outside => PipeState::Inside,
+        }
+    }
+}
+
+fn scan_vec(v: Vec<u32>, state: PipeState, mut enclosed: Vec<u32>) -> Vec<u32> {
+    if v.len() == 1 {
+        enclosed
+    } else {
+        enclosed = match state {
+            PipeState::Inside => {
+                enclosed.append(&mut (v[0]+1..v[1]).collect());
+                enclosed
+            },
+            PipeState::Outside => enclosed,
+        };
+        scan_vec(v[1..].to_vec(), state.toggle(), enclosed)
+    }
 }
 
 #[cfg(test)]
@@ -362,7 +392,7 @@ mod test {
     #[test]
     fn path_dicts() {
         let input = vec!["1_3".to_string(), "1_2".to_string()];
-        let (rows, cols) = format_path(input);
+        let (rows, cols) = format_path(&input);
 
         let mut e_rows: HashMap<u32, Vec<u32>> = HashMap::new();
         e_rows.insert(1, vec![2, 3]);
@@ -376,13 +406,33 @@ mod test {
     }
 
     #[test]
+    fn test_scan_vec() {
+        let test_row_1 = vec![1, 2, 7, 8];
+        let expected_row_1: Vec<u32> = vec![];
+
+        let test_row_2 = vec![1, 4, 5, 8];
+        let expected_row_2: Vec<u32> = vec![2, 3, 6, 7];
+
+        let output_row = scan_vec(test_row_1, PipeState::Inside, vec![]);
+        assert_eq!(expected_row_1, output_row);
+
+        let output_col = scan_vec(test_row_2, PipeState::Inside, vec![]);
+        assert_eq!(expected_row_2, output_col);
+    }
+
+    #[test]
     fn enclosed_case1() {
         let graph = parse("./enclosed_1.txt");
         let start = "1_1".to_string();
         let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
         loop_path.sort();
-        println!("loop path\n\n{:?}", loop_path);
+
+        let (rows, cols) = format_path(&loop_path);
+
+        println!("rows:\n{:?}", rows);
+        println!("cols:\n{:?}", cols);
+
         
-        panic!()
+        // panic!("non implemented")
     }
 }
