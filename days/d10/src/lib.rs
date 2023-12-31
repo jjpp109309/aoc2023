@@ -8,14 +8,14 @@ enum Location {
     West,
 }
 
-#[derive(Debug)]
-struct Node {
+#[derive(Debug, Clone, Copy)]
+pub struct Node {
     c: char,
     row: usize,
     col: usize,
 }
 
-pub fn parse(path: &str) -> HashMap<String, Vec<String>> {
+pub fn parse(path: &str) -> (HashMap<String, Node>, HashMap<String, Vec<String>>) {
     if let Ok(file) = fs::read_to_string(path) {
         let max_row = file.lines().count() - 1;
         let max_col = file
@@ -33,7 +33,7 @@ pub fn parse(path: &str) -> HashMap<String, Vec<String>> {
             .flatten()
             .collect();
 
-        make_graph(nodes, max_row, max_col)
+        (nodes.clone(), make_graph(nodes.clone(), max_row, max_col))
     } else {
         panic!("File not found");
     }
@@ -196,20 +196,20 @@ pub fn find_loop(
 
 fn format_path(
     path: &Vec<String>,
-) -> (HashMap<u32, Vec<u32>>, HashMap<u32, Vec<u32>>) {
-    let mut rows: HashMap<u32, Vec<u32>> = HashMap::new();
-    let mut cols: HashMap<u32, Vec<u32>> = HashMap::new();
+) -> (HashMap<String, Vec<String>>, HashMap<String, Vec<String>>) {
+    let mut rows: HashMap<String, Vec<String>> = HashMap::new();
+    let mut cols: HashMap<String, Vec<String>> = HashMap::new();
 
     for index in path.iter() {
-        let values: Vec<u32> = index
+        let values: Vec<String> = index
             .split("_")
-            .filter_map(|s| s.parse::<u32>().ok())
+            .map(|s| s.to_string())
             .collect();
 
-        let (row, col) = (values[0], values[1]);
+        let (row, col) = (&values[0], &values[1]);
 
-        rows.entry(row).or_insert(vec![]).push(col);
-        cols.entry(col).or_insert(vec![]).push(row);
+        rows.entry(row.into()).or_insert(vec![]).push(index.into());
+        cols.entry(col.into()).or_insert(vec![]).push(index.into());
 
     }
 
@@ -239,29 +239,77 @@ impl PipeState {
     }
 }
 
-fn scan_vec(
-    v: Vec<u32>,
-    mut state: PipeState,
-    mut enclosed: Vec<u32>,
-) -> Vec<u32> {
-    println!("-----------------------");
-    println!("vec: {:?}", v);
-    println!("state: {:?}", state);
+enum VecType {
+    Row,
+    Col,
+}
 
+fn scan_vec(
+    v: Vec<String>,
+    mut state: PipeState,
+    mut enclosed: Vec<String>,
+    graph: &HashMap<String, Node>,
+    vec_type: VecType,
+) -> Vec<String> {
+    println!("v: {:?}", v);
+    println!("state: {:?}", state);
     if v.len() == 1 {
         enclosed
     } else {
         enclosed = match state {
             PipeState::Inside => {
-                enclosed.append(&mut (v[0]+1..v[1]).collect());
+                let current: Vec<String> = v[0]
+                    .split("_")
+                    .map(|s| s.to_string())
+                    .collect();
+
+                let next: Vec<String> = v[1]
+                    .split("_")
+                    .map(|s| s.to_string())
+                    .collect();
+
+                let cur_row: u32 = current[0].parse().unwrap();
+                let nxt_row: u32 = next[0].parse().unwrap();
+
+                let cur_col: u32 = current[1].parse().unwrap();
+                let nxt_col: u32 = next[1].parse().unwrap();
+
+                let mut keys: Vec<String> = match vec_type {
+                    VecType::Row => {
+                        (cur_col+1..nxt_col)
+                            .into_iter()
+                            .map(|n| format!("{}_{}", cur_row, n))
+                            .collect()
+                    },
+                    VecType::Col => {
+                        (cur_row+1..nxt_row)
+                            .into_iter()
+                            .map(|n| format!("{}_{}", n, cur_col))
+                            .collect()
+                    },
+                };
+
+                enclosed.append(&mut keys);
                 enclosed
             },
             PipeState::Outside => enclosed,
         };
 
+        if let Some(node) = graph.get(&v[1]) {
+            match vec_type {
+                VecType::Row => match node.c {
+                    '|'|'J'|'7' => state.toggle(),
+                    _ => {},
+                },
+                VecType::Col => match node.c {
+                    '-'|'L'|'F' => state.toggle(),
+                    _ => {},
+                },
+            }
+        }
+        println!("enclosed: {:?}", enclosed);
 
-        println!("enclosed:\n{:?}", enclosed);
-        scan_vec(v[1..].to_vec(), state, enclosed)
+        scan_vec(v[1..].to_vec(), state, enclosed, graph, vec_type)
     }
 }
 
@@ -269,34 +317,35 @@ fn find_enclosed(
     rows: &HashMap<u32, Vec<u32>>,
     cols: &HashMap<u32, Vec<u32>>,
 ) -> usize {
-    let mut enclosed_count: HashMap<String, u8> = HashMap::new();
-
-    for (row, cols) in rows.iter() {
-        for col in scan_vec(cols.to_vec(), PipeState::Inside, vec![]) {
-            let key = format!("{}_{}", row, col);
-            if let Some(c) = enclosed_count.get(&key) {
-                enclosed_count.insert(key, c + 1);
-            } else {
-                enclosed_count.insert(key, 1);
-            }
-        }
-    }
-
-    for (col, rows) in cols.iter() {
-        for row in scan_vec(rows.to_vec(), PipeState::Inside, vec![]) {
-            let key = format!("{}_{}", row, col);
-            if let Some(c) = enclosed_count.get(&key) {
-                enclosed_count.insert(key, c + 1);
-            } else {
-                enclosed_count.insert(key, 0);
-            }
-        }
-    }
-
-    enclosed_count
-        .into_values()
-        .filter(|&v| v==2)
-        .count()
+    todo!()
+    // let mut enclosed_count: HashMap<String, u8> = HashMap::new();
+    //
+    // for (row, cols) in rows.iter() {
+    //     for col in scan_vec(cols.to_vec(), PipeState::Inside, vec![]) {
+    //         let key = format!("{}_{}", row, col);
+    //         if let Some(c) = enclosed_count.get(&key) {
+    //             enclosed_count.insert(key, c + 1);
+    //         } else {
+    //             enclosed_count.insert(key, 1);
+    //         }
+    //     }
+    // }
+    //
+    // for (col, rows) in cols.iter() {
+    //     for row in scan_vec(rows.to_vec(), PipeState::Inside, vec![]) {
+    //         let key = format!("{}_{}", row, col);
+    //         if let Some(c) = enclosed_count.get(&key) {
+    //             enclosed_count.insert(key, c + 1);
+    //         } else {
+    //             enclosed_count.insert(key, 0);
+    //         }
+    //     }
+    // }
+    //
+    // enclosed_count
+    //     .into_values()
+    //     .filter(|&v| v==2)
+    //     .count()
 }
 
 #[cfg(test)]
@@ -306,7 +355,7 @@ mod test {
     #[test]
     fn p1_parse() {
         let path = "./case1.txt";
-        let result = parse(path);
+        let (nodes, result) = parse(path);
         println!("{:?}", result);
 
         let mut expected: HashMap<String, Vec<String>> = HashMap::new();
@@ -326,7 +375,7 @@ mod test {
     #[test]
     fn p1_parse_case4() {
         let path = "./case4.txt";
-        let result = parse(path);
+        let (_, result) = parse(path);
 
         let mut expected: HashMap<String, Vec<String>> = HashMap::new();
 
@@ -348,7 +397,7 @@ mod test {
     #[test]
     fn p1_solve() {
         let path = "./case1.txt";
-        let graph = parse(path);
+        let (_, graph) = parse(path);
         let mut loop_path = find_loop(&graph, &"1_1".to_string(), &"".to_string(), vec![]);
         loop_path.reverse();
 
@@ -370,7 +419,7 @@ mod test {
     #[test]
     fn p1_solve2() {
         let path = "./case2.txt";
-        let graph = parse(path);
+        let (_, graph) = parse(path);
 
         println!("graph\n\n{:?}", graph);
 
@@ -404,7 +453,7 @@ mod test {
     #[test]
     fn solve_case3() {
         let path = "./case3.txt";
-        let graph = parse(path);
+        let (_, graph) = parse(path);
 
         println!("graph\n\n{:?}", graph);
 
@@ -435,89 +484,161 @@ mod test {
 
         assert_eq!(expected, loop_path);
     }
-
+    
     #[test]
     fn path_dicts() {
         let input = vec!["1_3".to_string(), "1_2".to_string()];
         let (rows, cols) = format_path(&input);
-
-        let mut e_rows: HashMap<u32, Vec<u32>> = HashMap::new();
-        e_rows.insert(1, vec![2, 3]);
-
-        let mut e_cols: HashMap<u32, Vec<u32>> = HashMap::new();
-        e_cols.insert(2, vec![1]);
-        e_cols.insert(3, vec![1]);
-
+    
+        let mut e_rows: HashMap<String, Vec<String>> = HashMap::new();
+        e_rows.insert("1".into(), vec!["1_2".into(), "1_3".into()]);
+    
+        let mut e_cols: HashMap<String, Vec<String>> = HashMap::new();
+        e_cols.insert("2".into(), vec!["1_2".to_string()]);
+        e_cols.insert("3".into(), vec!["1_3".to_string()]);
+    
         assert_eq!(rows, e_rows);
         assert_eq!(cols, e_cols);
     }
+    
+    #[test]
+    fn scan_vec_1() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("1_1".to_string(), Node { c: '|', row: 1, col: 1});
+        nodes.insert("1_4".to_string(), Node { c: '|', row: 1, col: 4});
+        nodes.insert("1_5".to_string(), Node { c: '|', row: 1, col: 5});
+        nodes.insert("1_8".to_string(), Node { c: '|', row: 1, col: 8});
+
+        let test_row_1 = vec![
+            "1_1".to_string(),
+            "1_4".to_string(),
+            "1_5".to_string(),
+            "1_8".to_string()
+        ];
+
+        let expected_row_1: Vec<String> = vec![
+            "1_2".to_string(),
+            "1_3".to_string(),
+            "1_6".to_string(),
+            "1_7".to_string()
+
+        ];
+        let output_row = scan_vec(test_row_1, PipeState::Inside, vec![], &nodes, VecType::Row);
+        assert_eq!(expected_row_1, output_row);
+    }
 
     #[test]
-    fn test_scan_vec() {
-        let test_row_1 = vec![1, 2, 7, 8];
-        let expected_row_1: Vec<u32> = vec![];
-        let output_row = scan_vec(test_row_1, PipeState::Inside, vec![]);
+    fn scan_vec_2() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("1_1".to_string(), Node { c: '|', row: 1, col: 1});
+        nodes.insert("1_2".to_string(), Node { c: '|', row: 1, col: 2});
+        nodes.insert("1_7".to_string(), Node { c: '|', row: 1, col: 7});
+        nodes.insert("1_8".to_string(), Node { c: '|', row: 1, col: 8});
+
+        let test_row_1 = vec![
+            "1_1".to_string(),
+            "1_2".to_string(),
+            "1_7".to_string(),
+            "1_8".to_string()
+        ];
+
+        let expected_row_1: Vec<String> = vec![];
+        let output_row = scan_vec(test_row_1, PipeState::Inside, vec![], &nodes, VecType::Row);
         assert_eq!(expected_row_1, output_row);
-        
-        let test_row_2 = vec![1, 4, 5, 8];
-        let expected_row_2: Vec<u32> = vec![2, 3, 6, 7];
-        let output_col = scan_vec(test_row_2, PipeState::Inside, vec![]);
-        assert_eq!(expected_row_2, output_col);
-        
-        let test_row_3 = vec![1, 2, 3, 4, 6, 7, 8, 9];
-        let expected_row_3: Vec<u32> = vec![];
-        let output_col = scan_vec(test_row_3, PipeState::Inside, vec![]);
-        assert_eq!(expected_row_3, output_col);
-
-        // L--J.L7...LJS7F-7L7.
-        // let test_row_4 = vec![0, 1, 2, 3, 5, 6, 10, 11, 12, 13, 14, 15, 16 , 17, 18];
-        // let expected_row_4: Vec<u32> = vec![7, 8, 9];
-        // let output_col = scan_vec(test_row_4, PipeState::Inside, vec![]);
-        // assert_eq!(expected_row_4, output_col);
     }
 
-    // #[test]
-    fn enclosed_case1() {
-        let graph = parse("./enclosed_1.txt");
-        let start = "1_1".to_string();
-        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-        loop_path.sort();
+    #[test]
+    fn scan_vec_3() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("1_1".to_string(), Node { c: '|', row: 1, col: 1});
+        nodes.insert("1_2".to_string(), Node { c: 'L', row: 1, col: 2});
+        nodes.insert("1_3".to_string(), Node { c: '-', row: 1, col: 3});
+        nodes.insert("1_4".to_string(), Node { c: '7', row: 1, col: 4});
+        nodes.insert("1_5".to_string(), Node { c: 'F', row: 1, col: 5});
+        nodes.insert("1_6".to_string(), Node { c: '-', row: 1, col: 6});
+        nodes.insert("1_7".to_string(), Node { c: 'J', row: 1, col: 7});
+        nodes.insert("1_8".to_string(), Node { c: '|', row: 1, col: 8});
 
-        let (rows, cols) = format_path(&loop_path);
-        println!("rows: {:?}", rows);
-        println!("cols: {:?}", cols);
-        let output = find_enclosed(&rows, &cols);
-        
-        assert_eq!(output, 4);
+        let test_row = vec![
+            "1_1".to_string(),
+            "1_2".to_string(),
+            "1_3".to_string(),
+            "1_4".to_string(),
+            "1_5".to_string(),
+            "1_6".to_string(),
+            "1_7".to_string(),
+            "1_8".to_string(),
+        ];
+
+        let expected_row: Vec<String> = vec![];
+        let output_row = scan_vec(test_row, PipeState::Inside, vec![], &nodes, VecType::Row);
+        assert_eq!(expected_row, output_row);
     }
 
-    // #[test]
-    fn enclosed_case2() {
-        let graph = parse("./enclosed_2.txt");
-        let start = "1_1".to_string();
-        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-        loop_path.sort();
+    #[test]
+    fn scan_vec_4() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("1_1".to_string(), Node { c: '-', row: 1, col: 1});
+        nodes.insert("1_2".to_string(), Node { c: '-', row: 1, col: 2});
+        nodes.insert("1_5".to_string(), Node { c: '-', row: 1, col: 5});
+        nodes.insert("1_7".to_string(), Node { c: '-', row: 1, col: 7});
 
-        let (rows, cols) = format_path(&loop_path);
-        println!("rows: {:?}", rows);
-        println!("cols: {:?}", cols);
-        let output = find_enclosed(&rows, &cols);
-        
-        assert_eq!(output, 4);
+        let test_row = vec![
+            "1_1".to_string(),
+            "1_2".to_string(),
+            "1_5".to_string(),
+            "1_7".to_string(),
+        ];
+
+        let expected_row: Vec<String> = vec![
+            "1_6".to_string(),
+        ];
+        let output_row = scan_vec(test_row, PipeState::Inside, vec![], &nodes, VecType::Col);
+        assert_eq!(expected_row, output_row);
     }
 
-    // #[test]
-    fn enclosed_case3() {
-        let graph = parse("./enclosed_3.txt");
-        let start = "4_12".to_string();
-        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-        loop_path.sort();
-
-        let (rows, cols) = format_path(&loop_path);
-        println!("rows: {:?}", rows);
-        println!("cols: {:?}", cols);
-        let output = find_enclosed(&rows, &cols);
-        
-        assert_eq!(output, 4);
-    }
+    // // #[test]
+    // fn enclosed_case1() {
+    //     let graph = parse("./enclosed_1.txt");
+    //     let start = "1_1".to_string();
+    //     let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+    //     loop_path.sort();
+    //
+    //     let (rows, cols) = format_path(&loop_path);
+    //     println!("rows: {:?}", rows);
+    //     println!("cols: {:?}", cols);
+    //     let output = find_enclosed(&rows, &cols);
+    //    
+    //     assert_eq!(output, 4);
+    // }
+    //
+    // // #[test]
+    // fn enclosed_case2() {
+    //     let graph = parse("./enclosed_2.txt");
+    //     let start = "1_1".to_string();
+    //     let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+    //     loop_path.sort();
+    //
+    //     let (rows, cols) = format_path(&loop_path);
+    //     println!("rows: {:?}", rows);
+    //     println!("cols: {:?}", cols);
+    //     let output = find_enclosed(&rows, &cols);
+    //    
+    //     assert_eq!(output, 4);
+    // }
+    //
+    // // #[test]
+    // fn enclosed_case3() {
+    //     let graph = parse("./enclosed_3.txt");
+    //     let start = "4_12".to_string();
+    //     let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+    //     loop_path.sort();
+    //
+    //     let (rows, cols) = format_path(&loop_path);
+    //     println!("rows: {:?}", rows);
+    //     println!("cols: {:?}", cols);
+    //     let output = find_enclosed(&rows, &cols);
+    //    
+    //     assert_eq!(output, 4);
+    // }
 }
