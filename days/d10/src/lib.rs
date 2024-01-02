@@ -315,31 +315,35 @@ fn scan_vec(
     }
 }
 
-fn find_enclosed(
-    loop_path: &Vec<String>,
-    ) -> usize {
+fn find_enclosed(loop_path: &Vec<String>) -> Vec<String> {
     
     let polygon: Vec<(i32, i32)> = loop2polygon(loop_path);
     let x_min = polygon.iter().map(|(x, _)| x).min().unwrap().clone();
     let x_max = polygon.iter().map(|(x, _)| x).max().unwrap().clone();
+    println!("x: min {} max {}", x_min, x_max);
 
     let y_min = polygon.iter().map(|(_, y)| y).min().unwrap().clone();
     let y_max = polygon.iter().map(|(_, y)| y).max().unwrap().clone();
+    println!("y: min {} max {}", y_min, y_max);
 
-    let mut count = 0;
+    let mut enclosed: Vec<String> = vec![];
     for x in x_min..=x_max {
         for y in y_min..=y_max {
-            if loop_path.contains(&format!("{}_{}", &x, &y)) {
+            let key = format!("{}_{}", &x, &y);
+            if loop_path.contains(&key) {
                 continue
             } 
 
             let point = Point { x, y };
-            if is_point_in_polygon(&point, &polygon) {
-                count += 1
+            let is_within = is_point_in_polygon(&point, &polygon);
+            println!("point {:?} {:?}", point, is_within);
+            
+            if is_within {
+                enclosed.push(key);
             }
         }
     }
-    count
+    enclosed
 }
 
 #[derive(Debug)]
@@ -373,7 +377,7 @@ fn is_point_in_polygon(point: &Point, polygon: &Vec<(i32, i32)>) -> bool {
                 break;
             }
         } else {
-            let within_y = (p1.y.min(p2.y)..p1.y.max(p2.y)).contains(&point.y);
+            let within_y = (p1.y <= point.y && point.y < p2.y) || (p2.y <= point.y && point.y < p1.y);
             let within_x = point.x < (p2.x - p1.x) * (point.y - p1.y) / (p2.y - p1.y) + p1.x;
 
             if within_y && within_x {
@@ -760,22 +764,7 @@ mod test {
         assert_eq!(expected, output);
     }
 
-    #[test]
-    fn enclosed_case1() {
-        let path = "./enclosed_3.txt";
-        let (_, graph) = parse(path);
-
-        let start = "4_12".to_string();
-        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-        if loop_path[0] != start {
-            loop_path.reverse()
-        }
-
-        println!("Path\n\n{:?}\n", loop_path);
-        display::print_path(&path, &loop_path);
-        panic!();
-        // assert_eq!(expected, loop_path);
-    }
+    
 
     #[test]
     fn within_polygon() {
@@ -922,7 +911,7 @@ mod test {
             (12, 4),
             (12, 5),
         ];
-
+        
         let test_points = vec![(7, 5), (4, 5), (3, 7), (6, 3), (14, 3)];
         let expected = vec![true, false, false, true, true];
 
@@ -931,7 +920,44 @@ mod test {
             println!("point: {:?}", point);
             let output = is_point_in_polygon(&point, &polygon);
 
-            assert_eq!(expected, &output, "cosa");
+            assert_eq!(expected, &output);
         }
+    }
+    
+    #[test]
+    fn enclosed_case1() {
+        let path = "./enclosed_1.txt";
+        let (_, graph) = parse(path);
+        let start = "1_1".to_string();
+        let loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+           
+        let output = find_enclosed(&loop_path);
+        display::print_path(&path, &loop_path);
+        println!("{:?}", loop_path);
+
+        let expected = vec![
+            "2_2",
+            "3_2",
+            "7_2",
+            "8_2",
+        ];
+              
+        assert_eq!(expected, output);
+    }
+    
+    #[test]
+    #[ignore]
+    fn enclosed_case3() {
+        // let graph = parse("./enclosed_3.txt");
+        // let start = "4_12".to_string();
+        // let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        // loop_path.sort();
+        //    
+        // let (rows, cols) = format_path(&loop_path);
+        // println!("rows: {:?}", rows);
+        // println!("cols: {:?}", cols);
+        // let output = find_enclosed(&rows, &cols);
+        //       
+        // assert_eq!(output, 4);
     }
 }
