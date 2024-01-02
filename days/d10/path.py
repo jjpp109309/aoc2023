@@ -14,8 +14,8 @@ y = [-x[0]+9 for x in coords]
 
 fig, ax = plt.subplots()
 ax.plot(x, y, '-')
-ax.set_xticks([i+.5 for i in range(int(max(x))+1)])
-ax.set_yticks([i+.5 for i in range(int(max(y))+1)])
+ax.set_xticks([i for i in range(int(max(x))+1)])
+ax.set_yticks([i for i in range(int(max(y))+1)])
 ax.grid()
 fig.show()
 
@@ -28,7 +28,15 @@ def is_point_inside_polygon(point, polygon):
         x1, y1 = polygon[i]
         x2, y2 = polygon[(i + 1) % n]  # To handle the last edge connecting back to the first vertex
 
-        if ((y1 <= point[1] and point[1] < y2) or (y2 <= point[1] and point[1] < y1)) and (point[0] < (x2 - x1) * (point[1] - y1) / (y2 - y1) + x1):
+        # Handle horizontal edges
+        if y1 == y2:
+            if y1 == point[1] and min(x1, x2) <= point[0] <= max(x1, x2):
+                return True  # Point lies on the horizontal edge, consider it inside
+            continue  # Skip further processing for horizontal edges
+
+        # Check for intersection with non-horizontal edges
+        if ((y1 <= point[1] < y2) or (y2 <= point[1] < y1)) and \
+           (point[0] < (x2 - x1) * (point[1] - y1) / (y2 - y1) + x1):
             odd_intersections = not odd_intersections
 
     return odd_intersections
