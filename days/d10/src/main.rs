@@ -1,3 +1,4 @@
+mod display;
 use d10::*;
 
 fn main() {

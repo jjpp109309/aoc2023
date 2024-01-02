@@ -1,5 +1,7 @@
+mod display;
 use std::fs;
 use std::collections::HashMap;
+use regex::Regex;
 
 enum Location {
     North,
@@ -314,38 +316,66 @@ fn scan_vec(
 }
 
 fn find_enclosed(
-    rows: &HashMap<u32, Vec<u32>>,
-    cols: &HashMap<u32, Vec<u32>>,
-) -> usize {
-    todo!()
-    // let mut enclosed_count: HashMap<String, u8> = HashMap::new();
-    //
-    // for (row, cols) in rows.iter() {
-    //     for col in scan_vec(cols.to_vec(), PipeState::Inside, vec![]) {
-    //         let key = format!("{}_{}", row, col);
-    //         if let Some(c) = enclosed_count.get(&key) {
-    //             enclosed_count.insert(key, c + 1);
-    //         } else {
-    //             enclosed_count.insert(key, 1);
-    //         }
-    //     }
-    // }
-    //
-    // for (col, rows) in cols.iter() {
-    //     for row in scan_vec(rows.to_vec(), PipeState::Inside, vec![]) {
-    //         let key = format!("{}_{}", row, col);
-    //         if let Some(c) = enclosed_count.get(&key) {
-    //             enclosed_count.insert(key, c + 1);
-    //         } else {
-    //             enclosed_count.insert(key, 0);
-    //         }
-    //     }
-    // }
-    //
-    // enclosed_count
-    //     .into_values()
-    //     .filter(|&v| v==2)
-    //     .count()
+    loop_path: &Vec<String>,
+    ) -> usize {
+    
+    let polygon: Vec<(i32, i32)> = loop2polygon(loop_path);
+    let x_min = polygon.iter().map(|(x, _)| x).min().unwrap().clone();
+    let x_max = polygon.iter().map(|(x, _)| x).max().unwrap().clone();
+
+    let y_min = polygon.iter().map(|(_, y)| y).min().unwrap().clone();
+    let y_max = polygon.iter().map(|(_, y)| y).max().unwrap().clone();
+
+    let mut count = 0;
+    for x in x_min..=x_max {
+        for y in y_min..=y_max {
+            if loop_path.contains(&format!("{}_{}", &x, &y)) {
+                continue
+            } 
+
+            let point = Point { x, y };
+            if is_point_in_polygon(&point, &polygon) {
+                count += 1
+            }
+        }
+    }
+    count
+}
+
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn is_point_in_polygon(point: &Point, polygon: &Vec<(i32, i32)>) -> bool {
+    
+}
+
+fn loop2polygon(coords: &Vec<String>) -> Vec<(i32, i32)> {
+    let re_coords = Regex::new(r"(\d+)_(\d+)").unwrap();
+    let x: Vec<i32> = coords
+        .iter()
+        .map(|s| -> i32 {
+            let (_, [_, x]) = re_coords.captures(s).unwrap().extract();
+            let x = x.to_string().parse::<i32>().ok().unwrap();
+            x
+        })
+        .collect();
+
+    let mut y: Vec<i32> = coords
+        .iter()
+        .map(|s| -> i32 {
+            let (_, [y, _]) = re_coords.captures(s).unwrap().extract();
+            let y = y.to_string().parse::<i32>().ok().unwrap();
+            y
+        })
+        .collect();
+
+    let y_max = y.iter().max().unwrap();
+
+    y = y.iter().map(|t| y_max - t).collect();
+
+    x.into_iter().zip(y.into_iter()).collect()
 }
 
 #[cfg(test)]
@@ -578,67 +608,169 @@ mod test {
     #[test]
     fn scan_vec_4() {
         let mut nodes: HashMap<String, Node> = HashMap::new();
-        nodes.insert("1_1".to_string(), Node { c: '-', row: 1, col: 1});
-        nodes.insert("1_2".to_string(), Node { c: '-', row: 1, col: 2});
-        nodes.insert("1_5".to_string(), Node { c: '-', row: 1, col: 5});
-        nodes.insert("1_7".to_string(), Node { c: '-', row: 1, col: 7});
+        nodes.insert("1_3".to_string(), Node { c: '-', row: 1, col: 3});
+        nodes.insert("2_3".to_string(), Node { c: '-', row: 2, col: 3});
+        nodes.insert("5_3".to_string(), Node { c: '-', row: 5, col: 3});
+        nodes.insert("7_3".to_string(), Node { c: '-', row: 7, col: 3});
 
         let test_row = vec![
-            "1_1".to_string(),
-            "1_2".to_string(),
-            "1_5".to_string(),
-            "1_7".to_string(),
+            "1_3".to_string(),
+            "2_3".to_string(),
+            "5_3".to_string(),
+            "7_3".to_string(),
         ];
 
-        let expected_row: Vec<String> = vec![
-            "1_6".to_string(),
+        let expected_col: Vec<String> = vec![
+            "6_3".to_string(),
         ];
         let output_row = scan_vec(test_row, PipeState::Inside, vec![], &nodes, VecType::Col);
-        assert_eq!(expected_row, output_row);
+        assert_eq!(expected_col, output_row);
     }
 
-    // // #[test]
-    // fn enclosed_case1() {
-    //     let graph = parse("./enclosed_1.txt");
-    //     let start = "1_1".to_string();
-    //     let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-    //     loop_path.sort();
-    //
-    //     let (rows, cols) = format_path(&loop_path);
-    //     println!("rows: {:?}", rows);
-    //     println!("cols: {:?}", cols);
-    //     let output = find_enclosed(&rows, &cols);
-    //    
-    //     assert_eq!(output, 4);
-    // }
-    //
-    // // #[test]
-    // fn enclosed_case2() {
-    //     let graph = parse("./enclosed_2.txt");
-    //     let start = "1_1".to_string();
-    //     let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-    //     loop_path.sort();
-    //
-    //     let (rows, cols) = format_path(&loop_path);
-    //     println!("rows: {:?}", rows);
-    //     println!("cols: {:?}", cols);
-    //     let output = find_enclosed(&rows, &cols);
-    //    
-    //     assert_eq!(output, 4);
-    // }
-    //
-    // // #[test]
-    // fn enclosed_case3() {
-    //     let graph = parse("./enclosed_3.txt");
-    //     let start = "4_12".to_string();
-    //     let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
-    //     loop_path.sort();
-    //
-    //     let (rows, cols) = format_path(&loop_path);
-    //     println!("rows: {:?}", rows);
-    //     println!("cols: {:?}", cols);
-    //     let output = find_enclosed(&rows, &cols);
-    //    
-    //     assert_eq!(output, 4);
-    // }
+    #[test]
+    fn scan_vec_5() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("1_3".to_string(), Node { c: '-', row: 1, col: 3});
+        nodes.insert("2_3".to_string(), Node { c: '-', row: 2, col: 3});
+
+        let test_row = vec![
+            "1_3".to_string(),
+            "2_3".to_string(),
+        ];
+
+        let expected_col: Vec<String> = vec![];
+        let output_row = scan_vec(test_row, PipeState::Inside, vec![], &nodes, VecType::Col);
+        assert_eq!(expected_col, output_row);
+    }
+
+    #[test]
+    fn scan_vec_6() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("1_3".to_string(), Node { c: '-', row: 1, col: 3});
+        nodes.insert("2_3".to_string(), Node { c: '-', row: 2, col: 3});
+        nodes.insert("5_3".to_string(), Node { c: '7', row: 5, col: 3});
+        nodes.insert("6_3".to_string(), Node { c: '|', row: 6, col: 3});
+        nodes.insert("7_3".to_string(), Node { c: 'J', row: 7, col: 3});
+
+        let test_row = vec![
+            "1_3".to_string(),
+            "2_3".to_string(),
+            "5_3".to_string(),
+            "6_3".to_string(),
+            "7_3".to_string(),
+        ];
+
+        let expected_col: Vec<String> = vec![];
+        let output_row = scan_vec(test_row, PipeState::Inside, vec![], &nodes, VecType::Col);
+        assert_eq!(expected_col, output_row);
+    }
+
+    #[test]
+    fn scan_vec_7() {
+        let mut nodes: HashMap<String, Node> = HashMap::new();
+        nodes.insert("5_4".to_string(), Node { c: 'F', row: 5, col: 4});
+        nodes.insert("5_5".to_string(), Node { c: '-', row: 5, col: 5});
+        nodes.insert("5_6".to_string(), Node { c: 'J', row: 5, col: 6});
+        nodes.insert("5_9".to_string(), Node { c: 'F', row: 5, col: 6});
+        nodes.insert("5_10".to_string(), Node { c: '7', row: 5, col: 6});
+        nodes.insert("5_11".to_string(), Node { c: 'F', row: 5, col: 6});
+        nodes.insert("5_12".to_string(), Node { c: 'J', row: 5, col: 6});
+        nodes.insert("5_13".to_string(), Node { c: '|', row: 5, col: 6});
+        nodes.insert("5_14".to_string(), Node { c: 'L', row: 5, col: 6});
+        nodes.insert("5_15".to_string(), Node { c: '7', row: 5, col: 6});
+        nodes.insert("5_16".to_string(), Node { c: 'L', row: 5, col: 6});
+        nodes.insert("5_17".to_string(), Node { c: '7', row: 5, col: 6});
+        nodes.insert("5_18".to_string(), Node { c: 'L', row: 5, col: 6});
+        nodes.insert("5_19".to_string(), Node { c: '7', row: 5, col: 6});
+
+        let test_row_1 = vec![
+            "5_4".to_string(),
+            "5_5".to_string(),
+            "5_6".to_string(),
+            "5_9".to_string(),
+            "5_10".to_string(),
+            "5_11".to_string(),
+            "5_12".to_string(),
+            "5_13".to_string(),
+            "5_14".to_string(),
+            "5_15".to_string(),
+            "5_16".to_string(),
+            "5_17".to_string(),
+            "5_18".to_string(),
+            "5_19".to_string(),
+        ];
+
+        let expected_row_1: Vec<String> = vec![
+            "5_7".to_string(),
+            "5_8".to_string(),
+        ];
+        let output_row = scan_vec(test_row_1, PipeState::Inside, vec![], &nodes, VecType::Row);
+        assert_eq!(expected_row_1, output_row);
+    }
+
+    #[test]
+    fn loop2polygon_1() {
+        let expected: Vec<(i32, i32)> = vec![
+            (0, 6),
+            (0, 5),
+            (4, 0),
+        ];
+        let input = vec![
+            "3_0".to_string(),
+            "4_0".to_string(),
+            "9_4".to_string(),
+        ];
+
+        let output = loop2polygon(&input);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn enclosed_case1() {
+        let path = "./enclosed_3.txt";
+        let (_, graph) = parse(path);
+
+        let start = "4_12".to_string();
+        let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        if loop_path[0] != start {
+            loop_path.reverse()
+        }
+
+        println!("Path\n\n{:?}\n", loop_path);
+        display::print_path(&path, &loop_path);
+        panic!();
+        // assert_eq!(expected, loop_path);
+    }
+    
+    #[test]
+    #[ignore]
+    fn enclosed_case2() {
+        // let graph = parse("./enclosed_2.txt");
+        // let start = "1_1".to_string();
+        // let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        // loop_path.sort();
+        //    
+        // let (rows, cols) = format_path(&loop_path);
+        // println!("rows: {:?}", rows);
+        // println!("cols: {:?}", cols);
+        // let output = find_enclosed(&rows, &cols);
+        //       
+        // assert_eq!(output, 4);
+    }
+    
+    #[test]
+    #[ignore]
+    fn enclosed_case3() {
+        // let graph = parse("./enclosed_3.txt");
+        // let start = "4_12".to_string();
+        // let mut loop_path = find_loop(&graph, &start, &"".to_string(), vec![]);
+        // loop_path.sort();
+        //    
+        // let (rows, cols) = format_path(&loop_path);
+        // println!("rows: {:?}", rows);
+        // println!("cols: {:?}", cols);
+        // let output = find_enclosed(&rows, &cols);
+        //       
+        // assert_eq!(output, 4);
+    }
 }
