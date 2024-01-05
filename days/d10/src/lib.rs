@@ -226,6 +226,72 @@ fn format_path(
     (rows, cols)
 }
 
+pub fn ids2coords(ids: Vec<String>) -> Vec<(i32, i32)> {
+    let re = Regex::new(r"(?<row>\d+)_(?<col>\d+)").unwrap();
+
+    let x = ids
+        .iter()
+        .map(|id| -> i32 {
+            let caps = re.captures(id).unwrap();
+            caps["col"].to_string().parse().ok().unwrap()
+        });
+
+    let mut y: Vec<i32> = ids
+        .iter()
+        .map(|id| -> i32 {
+            let caps = re.captures(id).unwrap();
+            caps["row"].to_string().parse().ok().unwrap()
+        })
+        .collect();
+
+    let y_max = y.iter().max().unwrap();
+    y = y.iter().map(|t| y_max - t).collect();
+
+    x.zip(y).collect()
+}
+
+pub fn point_in_polygon(point: &(i32, i32), polygon: &Vec<(i32, i32)>) -> bool {
+    let (x, y) = point;
+    let n = polygon.len();
+    let mut inside = false;
+
+    for i in 0..n {
+        let (x1, y1) = polygon[i];
+        let (x2, y2) = polygon[(i+1) % n];
+
+        if ((&y1 <= &y) && (y < &y2)) || ((&y2 <= &y) && (y < &y1)) {
+            if x < &((x2 - x1) * (y - y1) / (y2 - y1) + x1) {
+                inside = !inside;
+            }
+        }
+    }
+
+    inside
+}
+
+pub fn count_enclosed(polygon: &Vec<(i32, i32)>) -> i32 {
+    let x_min = polygon.iter().map(|(x, _)| x).min().unwrap().clone();
+    let x_max = polygon.iter().map(|(x, _)| x).max().unwrap().clone();
+
+    let y_min = polygon.iter().map(|(_, y)| y).min().unwrap().clone();
+    let y_max = polygon.iter().map(|(_, y)| y).max().unwrap().clone();
+
+    let mut count = 0;
+    for x in x_min..x_max {
+        for y in y_min..y_max {
+            let point: (i32, i32) = (x, y);
+
+            if polygon.contains(&point) {
+                continue;
+            } else if point_in_polygon(&point, &polygon) {
+                count += 1;
+            }
+        }
+    }
+
+    count
+}
+
 #[derive(Debug)]
 enum PipeState {
     Inside,
