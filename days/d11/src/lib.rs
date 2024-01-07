@@ -37,7 +37,7 @@ impl Space {
     }
 }
 
-pub fn parse_input(input: &str) -> Result<Space, Box<dyn Error>> {
+pub fn parse_input(input: &str, delta_size: i32) -> Result<Space, Box<dyn Error>> {
     let re = Regex::new(r"#").unwrap();
 
     let input = fs::read_to_string(input)?;
@@ -52,10 +52,12 @@ pub fn parse_input(input: &str) -> Result<Space, Box<dyn Error>> {
     let mut id = 0;
     let mut row = 0;
 
+    println!("col deltas {:?}", col_deltas);
     for line in input.lines() {
         let n = re.find_iter(line).map(|m| {
+
             let mut col = m.start() as i32;
-            col += col_deltas
+            col += (delta_size - 1) * col_deltas
                 .iter()
                 .filter(|d| &col > d)
                 .count() as i32;
@@ -67,7 +69,7 @@ pub fn parse_input(input: &str) -> Result<Space, Box<dyn Error>> {
         }).count();
 
         if n == 0 {
-            row += 1;
+            row += delta_size - 1;
         }
         row += 1;
     }
@@ -111,7 +113,7 @@ mod test {
     #[test]
     fn parse_1() {
         let input = "./test_1.txt";
-        let output = parse_input(input).expect("file not found");
+        let output = parse_input(input, 2).expect("file not found");
 
         let galaxies = vec![
             Galaxy::new(0, 0, 4),
@@ -142,10 +144,30 @@ mod test {
     #[test]
     fn sum_shortest_distance_1() {
         let input = "./test_1.txt";
-        let space = parse_input(input).expect("file not found");
+        let space = parse_input(input, 2).expect("file not found");
         let total = sum_shortest_paths(&space);
 
         let expected = 374;
+        assert_eq!(expected, total);
+    }
+
+    #[test]
+    fn sum_shortest_distance_2() {
+        let input = "./test_1.txt";
+        let space = parse_input(input, 10).expect("file not found");
+        let total = sum_shortest_paths(&space);
+
+        let expected = 1030;
+        assert_eq!(expected, total);
+    }
+
+    #[test]
+    fn sum_shortest_distance_3() {
+        let input = "./test_1.txt";
+        let space = parse_input(input, 100).expect("file not found");
+        let total = sum_shortest_paths(&space);
+
+        let expected = 8410;
         assert_eq!(expected, total);
     }
 }
