@@ -131,16 +131,14 @@ mod test {
         assert_eq!(expected, output);
     }
 
-    // #[test]
+    #[test]
     fn distance_1() {
-        let input = "./test_1.txt";
-        let output = parse_input(input).expect("file not found");
+        let g1 = Galaxy::new(4, 6, 1);
+        let g2 = Galaxy::new(8, 11, 5);
 
-        let galaxies = vec![
-            Galaxy::new(4, 6, 1),
-            Galaxy::new(8, 11, 4),
-        ];
-        let expected = Space::new(galaxies);
+        let expected = 9;
+        let output = g1.distance(&g2);
+
         assert_eq!(expected, output);
     }
 }
