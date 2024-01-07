@@ -5,16 +5,16 @@ use std::error::Error;
 #[derive(Debug, PartialEq)]
 pub struct Galaxy {
     pub id: u32,
-    pub x: i32,
-    pub y: i32,
+    pub x: i64,
+    pub y: i64,
 }
 
 impl Galaxy {
-    fn new(id: u32, x: i32, y: i32) -> Galaxy {
+    fn new(id: u32, x: i64, y: i64) -> Galaxy {
         Galaxy { id, x, y }
     }
 
-    fn distance(&self, other: &Galaxy) -> i32 {
+    fn distance(&self, other: &Galaxy) -> i64 {
         let x_dist = (self.x - other.x).abs();
         let y_dist = (self.y - other.y).abs();
 
@@ -37,7 +37,7 @@ impl Space {
     }
 }
 
-pub fn parse_input(input: &str, delta_size: i32) -> Result<Space, Box<dyn Error>> {
+pub fn parse_input(input: &str, delta_size: i64) -> Result<Space, Box<dyn Error>> {
     let re = Regex::new(r"#").unwrap();
 
     let input = fs::read_to_string(input)?;
@@ -52,15 +52,14 @@ pub fn parse_input(input: &str, delta_size: i32) -> Result<Space, Box<dyn Error>
     let mut id = 0;
     let mut row = 0;
 
-    println!("col deltas {:?}", col_deltas);
     for line in input.lines() {
         let n = re.find_iter(line).map(|m| {
 
-            let mut col = m.start() as i32;
+            let mut col = m.start() as i64;
             col += (delta_size - 1) * col_deltas
                 .iter()
                 .filter(|d| &col > d)
-                .count() as i32;
+                .count() as i64;
 
             let galaxy = Galaxy::new(id, row, col);
             space.add_galaxy(galaxy);
@@ -77,22 +76,22 @@ pub fn parse_input(input: &str, delta_size: i32) -> Result<Space, Box<dyn Error>
     Ok(space)
 }
 
-fn get_column_deltas(matrix: &Vec<Vec<char>>, empty: &char) -> Vec<i32> {
+fn get_column_deltas(matrix: &Vec<Vec<char>>, empty: &char) -> Vec<i64> {
     let mut deltas = Vec::new();
 
     for col in 0..matrix[0].len() {
         let column: Vec<char> = matrix.into_iter().map(|r| r[col]).collect();
         if column.iter().all(|c| c == empty ) {
-            deltas.push(col as i32);
+            deltas.push(col as i64);
         } 
     }
 
     deltas
 }
 
-pub fn sum_shortest_paths(space: &Space) -> i32 {
+pub fn sum_shortest_paths(space: &Space) -> i64 {
     let mut total = 0;
-    let n_galaxies = space.galaxies.len() as i32;
+    let n_galaxies = space.galaxies.len() as i64;
     
     for i in 0..(n_galaxies-1) {
         for j in (i+1)..n_galaxies {
