@@ -1,7 +1,6 @@
 use regex::Regex;
 use std::fs;
 use std::error::Error;
-use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub struct Galaxy {
@@ -89,8 +88,8 @@ fn get_column_deltas(matrix: &Vec<Vec<char>>, empty: &char) -> Vec<i32> {
     deltas
 }
 
-fn find_smallest_distance(space: Space) -> i32 {
-    let mut min_distance = i32::MAX;
+pub fn sum_shortest_paths(space: &Space) -> i32 {
+    let mut total = 0;
     let n_galaxies = space.galaxies.len() as i32;
     
     for i in 0..(n_galaxies-1) {
@@ -98,13 +97,11 @@ fn find_smallest_distance(space: Space) -> i32 {
             let distance = space.galaxies[i as usize]
                 .distance(&space.galaxies[j as usize]);
 
-            if distance < min_distance {
-                min_distance = distance
-            }
+            total += distance;
         }
     }
 
-    min_distance
+    total
 }
 
 #[cfg(test)]
@@ -140,5 +137,15 @@ mod test {
         let output = g1.distance(&g2);
 
         assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn sum_shortest_distance_1() {
+        let input = "./test_1.txt";
+        let space = parse_input(input).expect("file not found");
+        let total = sum_shortest_paths(&space);
+
+        let expected = 374;
+        assert_eq!(expected, total);
     }
 }
