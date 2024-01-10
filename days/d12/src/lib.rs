@@ -42,9 +42,34 @@ impl SpringRow {
 
         SpringRow { conditions, groups }
     }
+
+    fn get_fountains(&self) -> Vec<Vec<Condition>> {
+        self.groups
+            .iter()
+            .map(|x| vec![Condition::Operational; *x])
+            .collect()
+    }
+
+    fn count_arrangements(&self) -> usize {
+        let fountains = self.get_fountains();
+        
+        todo!()
+    }
+
+    fn find_next_spot(group: &Vec<Condition>, groups: &Vec<Condition>, idx: usize) -> Option<usize> {
+        if group.len() <= groups.len() {
+            if group.iter().zip(groups.iter()).all(|(a, b)| a==b) {
+                return Some(idx)
+            } else {
+                return Self::find_next_spot(group, &groups[idx..].to_vec(), idx+1)
+            }
+        } else {
+            return None
+        }
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Condition {
     Operational,
     Damaged,
