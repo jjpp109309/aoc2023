@@ -1,5 +1,6 @@
 use std::fs;
 use std::error::Error;
+use std::fmt;
 
     #[derive(Debug, PartialEq)]
 struct Onsen {
@@ -12,10 +13,27 @@ impl Onsen {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 struct SpringRow {
     conditions: Vec<Condition>,
     groups: Vec<usize>,
+}
+
+impl fmt::Debug for SpringRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let springs: String = self.conditions
+            .iter()
+            .map(|c| {
+                match c {
+                    Condition::Operational => '.',
+                    Condition::Damaged => '#',
+                    Condition::Unknown => '?',
+                }
+            })
+        .collect();
+
+        write!(f, "springs: {}", springs)
+    }
 }
 
 impl SpringRow {
@@ -24,7 +42,6 @@ impl SpringRow {
     }
 
     fn parse(row: &str) -> SpringRow {
-        println!("row {:?}", row);
         let mut parts = row.split(" ");
 
         let conditions: Vec<Condition> = parts
@@ -85,13 +102,7 @@ fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize 
     if let Some(group_size) = row.groups.iter().next() {
         for start in idx..=row.conditions.len() - group_size {
 
-            println!("-------------------------------");
-            println!("cond {}", row.conditions.len() - group_size);
-            println!("row {:?}", row);
-            println!("idx {:?}", idx);
-            println!("counter {:?}", counter);
-            println!("start: {}", start);
-            let prev_operational = if idx == 0 {
+            let prev_operational = if start == 0 {
                 true
             } else {
                 match row.conditions[start-1] {
@@ -100,7 +111,6 @@ fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize 
                     Condition::Unknown => true,
                 }
             };
-            println!("prev: {}", prev_operational);
 
             let is_fit = match row.conditions[start] {
                 Condition::Operational => continue,
@@ -116,7 +126,6 @@ fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize 
                         })
                     }
                 };
-            println!("is_fit: {}", is_fit);
 
             let next_operational = if start+group_size == row.conditions.len() {
                 true
@@ -127,9 +136,6 @@ fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize 
                     Condition::Unknown => true,
                 }
             };
-
-
-            println!("next: {}", next_operational);
 
             if prev_operational && is_fit && next_operational {
                 let end = start + group_size;
@@ -148,7 +154,6 @@ fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize 
                 }
                 
                 let new_row = SpringRow::new(conditions, groups);
-                println!("new row{:?}", new_row);
                 counter = count_arrangements(&new_row, start+group_size, counter);
             }
         }  
@@ -269,6 +274,64 @@ mod test {
         let row = SpringRow::new(conditions, groups);
         
         let expected = 1;
+        let output = count_arrangements(&row, 0, 0);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn count_arrangements_4() {
+        let groups = vec![1, 3, 1, 6];
+        let conditions = vec![
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+        ];
+        let row = SpringRow::new(conditions, groups);
+
+        let expected = 1;
+        let output = count_arrangements(&row, 0, 0);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn count_arrangements_5() {
+        let groups = vec![1, 6, 5];
+        let conditions = vec![
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Operational,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Operational,
+        ];
+        let row = SpringRow::new(conditions, groups);
+
+        let expected = 4;
         let output = count_arrangements(&row, 0, 0);
         assert_eq!(expected, output);
     }
