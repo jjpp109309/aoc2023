@@ -78,6 +78,26 @@ impl SpringRow {
 
         SpringRow { conditions, groups }
     }
+
+    fn parse2(row: &str) -> SpringRow {
+        let mut parts = row.split(" ");
+
+        let multiplied_row = vec![parts.next().unwrap(); 5].join("");
+
+        let conditions: Vec<Condition> = multiplied_row
+            .chars()
+            .map(Condition::parse_char)
+            .collect();
+
+        let multiplied_row = vec![parts.next().unwrap(); 5].join(",");
+
+        let groups = multiplied_row
+            .split(",")
+            .map(|d| d.parse::<usize>().ok().unwrap())
+            .collect();
+
+        SpringRow { conditions, groups }
+    }
     
     fn is_valid(&self, original: &Vec<usize>) -> bool {
         let re = Regex::new(r"#+").unwrap();
@@ -116,6 +136,17 @@ pub fn parse_input(path: &str) -> Result<Onsen, Box<dyn Error>>{
     let springs: Vec<SpringRow> = input
         .lines()
         .map(SpringRow::parse)
+        .collect();
+
+    Ok(Onsen::new(springs))
+}
+
+pub fn parse_input2(path: &str) -> Result<Onsen, Box<dyn Error>>{
+    let input = fs::read_to_string(path)?;
+    
+    let springs: Vec<SpringRow> = input
+        .lines()
+        .map(SpringRow::parse2)
         .collect();
 
     Ok(Onsen::new(springs))
@@ -435,6 +466,82 @@ mod test {
 
         let expected = 11;
         let output = count_arrangements(&row, 0, 0, &row.groups.clone());
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn parse_input2_1() {
+        let input = "./test_files/p2_case1.txt";
+        let output = parse_input2(input).unwrap();
+
+        let mut spring_rows: Vec<SpringRow> = vec![];
+        let conditions = vec![
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Operational,
+            Condition::Damaged,
+        ];
+        let groups: Vec<usize> = vec![1, 1, 1, 1, 1];
+        spring_rows.push(SpringRow { conditions, groups });
+        let expected = Onsen::new(spring_rows);
+
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn parse_input2_2() {
+        let input = "./test_files/p2_case2.txt";
+        let output = parse_input2(input).unwrap();
+
+        let mut spring_rows: Vec<SpringRow> = vec![];
+        let conditions = vec![
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+
+        ];
+        let groups: Vec<usize> = vec![1,1,3,1,1,3,1,1,3,1,1,3,1,1,3];
+        spring_rows.push(SpringRow { conditions, groups });
+        let expected = Onsen::new(spring_rows);
+
         assert_eq!(expected, output);
     }
 }
