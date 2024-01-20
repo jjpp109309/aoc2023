@@ -1,10 +1,11 @@
 use std::fs;
 use std::error::Error;
 use std::fmt;
+use regex::Regex;
 
     #[derive(Debug, PartialEq)]
-struct Onsen {
-    springs: Vec<SpringRow>
+pub struct Onsen {
+    pub springs: Vec<SpringRow>
 }
 
 impl Onsen {
@@ -14,9 +15,9 @@ impl Onsen {
 }
 
 #[derive(PartialEq)]
-struct SpringRow {
-    conditions: Vec<Condition>,
-    groups: Vec<usize>,
+pub struct SpringRow {
+    pub conditions: Vec<Condition>,
+    pub groups: Vec<usize>,
 }
 
 impl fmt::Debug for SpringRow {
@@ -33,6 +34,23 @@ impl fmt::Debug for SpringRow {
         .collect();
 
         write!(f, "springs: {}", springs)
+    }
+}
+
+impl fmt::Display for SpringRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let springs: String = self.conditions
+            .iter()
+            .map(|c| {
+                match c {
+                    Condition::Operational => '.',
+                    Condition::Damaged => '#',
+                    Condition::Unknown => '?',
+                }
+            })
+        .collect();
+
+        write!(f, "{}", springs)
     }
 }
 
@@ -60,17 +78,22 @@ impl SpringRow {
 
         SpringRow { conditions, groups }
     }
+    
+    fn is_valid(&self, original: &Vec<usize>) -> bool {
+        let re = Regex::new(r"#+").unwrap();
+        let string = format!("{}", &self);
 
-    fn get_fountains(&self) -> Vec<Vec<Condition>> {
-        self.groups
-            .iter()
-            .map(|x| vec![Condition::Operational; *x])
-            .collect()
+        let groups: Vec<usize> = re
+            .find_iter(&string)
+            .map(|g| g.as_str().to_string().len())
+            .collect();
+
+        groups == *original
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-enum Condition {
+pub enum Condition {
     Operational,
     Damaged,
     Unknown,
@@ -87,7 +110,7 @@ impl Condition {
     }
 }
 
-fn parse_input(path: &str) -> Result<Onsen, Box<dyn Error>>{
+pub fn parse_input(path: &str) -> Result<Onsen, Box<dyn Error>>{
     let input = fs::read_to_string(path)?;
     
     let springs: Vec<SpringRow> = input
@@ -98,7 +121,12 @@ fn parse_input(path: &str) -> Result<Onsen, Box<dyn Error>>{
     Ok(Onsen::new(springs))
 }
 
-fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize {
+pub fn count_arrangements(
+    row: &SpringRow,
+    idx: usize,
+    mut counter: usize,
+    original: &Vec<usize>
+) -> usize {
     if let Some(group_size) = row.groups.iter().next() {
         for start in idx..=row.conditions.len() - group_size {
 
@@ -154,11 +182,14 @@ fn count_arrangements(row: &SpringRow, idx: usize, mut counter: usize) -> usize 
                 }
                 
                 let new_row = SpringRow::new(conditions, groups);
-                counter = count_arrangements(&new_row, start+group_size, counter);
+                counter = count_arrangements(&new_row, start+group_size, counter, original);
+                
             }
         }  
     } else {
-        return counter + 1
+        if row.is_valid(original) {
+            return counter + 1
+        }
     }
 
     counter
@@ -231,7 +262,7 @@ mod test {
         let row = SpringRow::new(conditions, groups);
         
         let expected = 4;
-        let output = count_arrangements(&row, 0, 0);
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
         assert_eq!(expected, output);
     }
     
@@ -255,7 +286,7 @@ mod test {
         let row = SpringRow::new(conditions, groups);
         
         let expected = 10;
-        let output = count_arrangements(&row, 0, 0);
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
         assert_eq!(expected, output);
     }
 
@@ -274,7 +305,7 @@ mod test {
         let row = SpringRow::new(conditions, groups);
         
         let expected = 1;
-        let output = count_arrangements(&row, 0, 0);
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
         assert_eq!(expected, output);
     }
 
@@ -301,7 +332,7 @@ mod test {
         let row = SpringRow::new(conditions, groups);
 
         let expected = 1;
-        let output = count_arrangements(&row, 0, 0);
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
         assert_eq!(expected, output);
     }
 
@@ -332,7 +363,78 @@ mod test {
         let row = SpringRow::new(conditions, groups);
 
         let expected = 4;
-        let output = count_arrangements(&row, 0, 0);
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
+        assert_eq!(expected, output);
+    }
+    // ??.??#?###?
+
+    #[test]
+    fn count_arrangements_6() {
+        let groups = vec![1, 7];
+        let conditions = vec![
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Damaged,
+            Condition::Unknown,
+        ];
+        let row = SpringRow::new(conditions, groups);
+
+        let expected = 4;
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn count_arrangements_7() {
+        let groups = vec![1, 1, 2];
+        let conditions = vec![
+            Condition::Unknown,
+            Condition::Operational,
+            Condition::Operational,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Operational,
+        ];
+        let row = SpringRow::new(conditions, groups);
+
+        let expected = 7;
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    fn count_arrangements_8() {
+        let groups = vec![2, 1, 1, 1];
+        let conditions = vec![
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Damaged,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Unknown,
+            Condition::Damaged,
+        ];
+        let row = SpringRow::new(conditions, groups);
+
+        let expected = 11;
+        let output = count_arrangements(&row, 0, 0, &row.groups.clone());
         assert_eq!(expected, output);
     }
 }
